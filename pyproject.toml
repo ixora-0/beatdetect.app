@@ -1,0 +1,38 @@
+[project]
+name = "beatdetect"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+  "librosa>=0.11.0",
+  "marimo>=0.13.2",
+  "numpy>=2.2.5",
+  "pandas>=2.2.3",
+  "plotly>=6.0.1",
+  "polars>=1.27.1",
+  "torch>=2.6.0",
+  "torchaudio>=2.6.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.uv.sources]
+torch = [{ index = "pytorch-cu124" }]
+
+[[tool.uv.index]]
+name = "pytorch-cu124"
+url = "https://download.pytorch.org/whl/cu124"
+explicit = true
+
+# # torchvision = [{ index = "pytorch-cu128" }]
+# torchaudio = [{ index = "pytorch-cu128" }]
+
+[tool.marimo.runtime]
+auto_instantiate = false
+on_cell_change = "lazy"
+[tool.marimo.display]
+theme = "dark"
+cell_output = "below"
