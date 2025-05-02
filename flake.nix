@@ -109,6 +109,7 @@
       devShells.default = pkgs.mkShell {
         packages = [virtualenv] ++ (with pkgs; [
           uv
+          rclone  # for remote mounting dataset
         ]);
 
         env = {

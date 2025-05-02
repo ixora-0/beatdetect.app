@@ -12,3 +12,6 @@ wheels/
 
 # No data version control
 data
+
+# pypdl logs
+pypdl.log

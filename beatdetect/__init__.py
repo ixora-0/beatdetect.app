@@ -1,4 +1,9 @@
 import pathlib
 
-ANNOTATIONS_PATH = pathlib.Path("data/annotations")
-ANNOTATION_DATASET_PATHS = [p for p in ANNOTATIONS_PATH.iterdir() if p.is_dir()]
+DOWNLOADS_PATH = pathlib.Path("data/downloads")
+
+ANNOTATIONS_GITHUB_USER = "CPJKU"
+ANNOTATIONS_GITHUB_REPO = "beat_this_annotations"
+ANNOTATIONS_GITHUB_BRANCH = "main"
+ANNOTATIONS_RAW_PATH = pathlib.Path("data/raw/annotations")
+ANNOTATIONS_PROCESSED_PATH = pathlib.Path("data/processed/annotations")
