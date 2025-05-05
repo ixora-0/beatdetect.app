@@ -37,3 +37,11 @@ on_cell_change = "lazy"
 [tool.marimo.display]
 theme = "dark"
 cell_output = "below"
+
+[tool.ruff.lint]
+select = ["I"]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.11.7",
+]

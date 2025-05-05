@@ -1,7 +1,8 @@
-import re
 import pathlib
-from beatdetect.utils import iterate_beat_files
+import re
+
 from beatdetect import ANNOTATIONS_PROCESSED_PATH, ANNOTATIONS_RAW_PATH
+from beatdetect.utils import iterate_beat_files
 
 
 def normalize_annotation(path: pathlib.Path) -> bool:

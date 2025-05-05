@@ -1,13 +1,15 @@
-import time
 import datetime
+import time
 import zipfile
+
 from pypdl import Pypdl
+
 from beatdetect import (
-    DOWNLOADS_PATH,
-    ANNOTATIONS_GITHUB_USER,
-    ANNOTATIONS_GITHUB_REPO,
     ANNOTATIONS_GITHUB_BRANCH,
+    ANNOTATIONS_GITHUB_REPO,
+    ANNOTATIONS_GITHUB_USER,
     ANNOTATIONS_RAW_PATH,
+    DOWNLOADS_PATH,
 )
 
 

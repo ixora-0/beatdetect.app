@@ -1,4 +1,5 @@
 import json
+
 from beatdetect import ANNOTATIONS_RAW_PATH
 
 
