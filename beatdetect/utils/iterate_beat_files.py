@@ -1,15 +1,14 @@
 import json
 
-from beatdetect import ANNOTATIONS_RAW_PATH
+from beatdetect import ANNOTATIONS_PROCESSED_PATH, ANNOTATIONS_RAW_PATH
 
 
-def iterate_beat_files(has_downbeats=True):
-    if not ANNOTATIONS_RAW_PATH.exists():
+def iterate_beat_files(processed=True, has_downbeats=True):
+    path = ANNOTATIONS_PROCESSED_PATH if processed else ANNOTATIONS_RAW_PATH
+    if not path.exists():
         raise FileNotFoundError(f"{ANNOTATIONS_RAW_PATH} doesn't exist.")
 
-    annotation_raw_dataset_paths = [
-        p for p in ANNOTATIONS_RAW_PATH.iterdir() if p.is_dir()
-    ]
+    annotation_raw_dataset_paths = [p for p in path.iterdir() if p.is_dir()]
     for dataset_path in annotation_raw_dataset_paths:
         info_file_path = dataset_path / "info.json"
         if has_downbeats:

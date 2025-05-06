@@ -42,7 +42,7 @@ def main():
     total_files = 0
     processed_files = 0
 
-    for idx, input_path in enumerate(iterate_beat_files(), 1):
+    for idx, input_path in enumerate(iterate_beat_files(processed=False), 1):
         total_files += 1
         print(f"\033[KProcessing file #{idx}: {input_path}", end="\r")
         if normalize_annotation(input_path):
