@@ -14,6 +14,7 @@ dependencies = [
   "pypdl>=1.5.3",
   "torch>=2.6.0",
   "torchaudio>=2.6.0",
+  "tqdm>=4.67.1",
 ]
 
 [build-system]
