@@ -10,6 +10,7 @@ ANNOTATIONS_GITHUB_BRANCH = "main"
 ANNOTATIONS_RAW_PATH = pathlib.Path("data/raw/annotations")
 ANNOTATIONS_PROCESSED_PATH = pathlib.Path("data/processed/annotations")
 ONE_HOT_BEATS_PATH = pathlib.Path("data/processed/one-hot-annotations/")
+SPECTRAL_FLUX_PATH = pathlib.Path("data/processed/spectral-flux/")
 
 SPECTROGRAMS_URL_TEMPLATE = string.Template(
     "https://zenodo.org/records/13922116/files/${dataset}.zip?download=1"
