@@ -7,6 +7,7 @@ requires-python = ">=3.13"
 dependencies = [
   "librosa>=0.11.0",
   "marimo>=0.13.2",
+  "mir-eval>=0.8.2",
   "numpy>=2.2.5",
   "pandas>=2.2.3",
   "plotly>=6.0.1",
@@ -35,6 +36,7 @@ explicit = true
 [tool.marimo.runtime]
 auto_instantiate = false
 on_cell_change = "lazy"
+output_max_bytes = 20_000_000
 [tool.marimo.display]
 theme = "dark"
 cell_output = "below"
