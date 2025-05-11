@@ -9,7 +9,7 @@ ANNOTATIONS_GITHUB_REPO = "beat_this_annotations"
 ANNOTATIONS_GITHUB_BRANCH = "main"
 ANNOTATIONS_RAW_PATH = pathlib.Path("data/raw/annotations")
 ANNOTATIONS_PROCESSED_PATH = pathlib.Path("data/processed/annotations")
-ONE_HOT_BEATS_PATH = pathlib.Path("data/processed/one-hot-annotations/")
+ENCODED_BEATS_PATH = pathlib.Path("data/processed/encoded-annotations/")
 SPECTRAL_FLUX_PATH = pathlib.Path("data/processed/spectral-flux/")
 
 SPECTROGRAMS_URL_TEMPLATE = string.Template(
