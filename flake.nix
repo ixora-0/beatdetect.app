@@ -110,6 +110,7 @@
         packages = [virtualenv] ++ (with pkgs; [
           uv
           rclone  # for remote mounting dataset
+          graphviz
         ]);
 
         env = {
