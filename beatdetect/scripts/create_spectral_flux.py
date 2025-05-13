@@ -36,6 +36,7 @@ def main(specified_dataset=None):
                 lag=2,
                 max_size=3,
             )
+            spectral_flux = np.clip(spectral_flux, None, 4)  # clip values above 4
 
             torch.save(
                 torch.from_numpy(spectral_flux), spectral_flux_dir / f"{name}.pt"
