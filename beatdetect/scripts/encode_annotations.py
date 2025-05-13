@@ -58,6 +58,11 @@ def main(specified_dataset=None):
 
             # windows: (T, K), gauss: (K,) → result: (T,)
             smoothed = (windows * gauss).sum(dim=1)
+
+            # renormalize
+            center_weight = gauss[half]
+            smoothed = smoothed / center_weight
+
             torch.save(smoothed, encoded_dir / f"{name}.pt")
             count += 1
 
