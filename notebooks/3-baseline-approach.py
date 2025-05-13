@@ -233,7 +233,7 @@ def _(annotated_beats, go, make_subplots, melspect, np, px, spectral_flux, xs):
         cols=1,
         shared_xaxes=True,
         vertical_spacing=0.1,
-        subplot_titles=["Log Mel Spectrogram", "Spectral Flux"],
+        subplot_titles=["Mel Spectrogram", "Spectral Flux"],
     )
 
     # Add spectrogram
