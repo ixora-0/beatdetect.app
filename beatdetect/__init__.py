@@ -34,3 +34,5 @@ DATASETS = [
     "tapcorrect",
 ]
 SPECTROGRAMS_RAW_PATH = pathlib.Path("data/raw/spectrograms/")
+
+RANDOM_SEED = 0
