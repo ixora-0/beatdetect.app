@@ -1,7 +1,7 @@
 {
   description = "A flake that use nix to manage uv venv using uv2nix.";
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.05";
 
     flake-utils.url = "github:numtide/flake-utils";
 
@@ -17,95 +17,95 @@
       uv2nix.follows = "uv2nix";
       pyproject-nix.follows = "pyproject-nix";
     };
+
+    uv2nix_hammer_overrides.url = "github:TyberiusPrime/uv2nix_hammer_overrides";
+    uv2nix_hammer_overrides.inputs.nixpkgs.follows = "nixpkgs";
   };
 
-  outputs = {
-    nixpkgs,
-    flake-utils,
-    pyproject-nix,
-    uv2nix,
-    pyproject-build-systems,
-    ...
-  }:
-    flake-utils.lib.eachDefaultSystem (system: let
-      inherit (nixpkgs) lib;
-      pkgs = import nixpkgs {
-        system = "x86_64-linux";        
+  outputs = { self, ... }@inputs:
+    inputs.flake-utils.lib.eachDefaultSystem (system: let
+      inherit (inputs.nixpkgs) lib;
+      pkgs = import inputs.nixpkgs {
+        inherit system;
         config.allowUnfree = true;  # for cuda packages
-        config.cudaSupport = true;
       };
+      python = pkgs.python313;
+      projectName = "beatdetect";  # matches [project.name] in pyproject.toml
 
-      workspace = uv2nix.lib.workspace.loadWorkspace { workspaceRoot = ./.; };
-      overlay = workspace.mkPyprojectOverlay {
-        sourcePreference = "wheel"; # or sourcePreference = "sdist";
+      # Load Project Workspace (parses pyproject.toml, uv.lock)
+      workspace = inputs.uv2nix.lib.workspace.loadWorkspace { workspaceRoot = ./.; };
+
+      # Generate Nix Overlay from uv.lock
+      uvLockedOverlay = workspace.mkPyprojectOverlay {
+        sourcePreference = "wheel";
         # Optionally customise PEP 508 environment
         # environ = {
         #   platform_release = "5.10.65";
         # };
       };
 
-      # Extend generated overlay with build fixups
-      #
-      # Uv2nix can only work with what it has, and uv.lock is missing essential metadata to perform some builds.
-      # This is an additional overlay implementing build fixups.
-      # See:
-      # - https://pyproject-nix.github.io/uv2nix/FAQ.html
-      cudaLibs = with pkgs; [
-        cudaPackages.cudnn
-        cudaPackages.nccl
-        cudaPackages.cusparselt
-        cudaPackages.cudatoolkit
-        linuxPackages.nvidia_x11
-      ];
-      pyprojectOverrides = final: prev: {
-        # Implement build fixups here.
-        # torch + torchaudio
-        torch = prev.torch.overrideAttrs (old: {
-          buildInputs = (old.buildInputs or []) ++ cudaLibs;
-          nativeBuildInputs = old.nativeBuildInputs ++ final.resolveBuildSystem { editables = []; };
-        });
-        torchaudio = prev.torchaudio.overrideAttrs (old: {
-          autoPatchelfIgnoreMissingDeps = true;  # not installing optional dependencies like ffmpeg [en|de]coder
-          preFixup = lib.optionals (!pkgs.stdenv.isDarwin) ''
-            addAutoPatchelfSearchPath "${final.torch}/${final.python.sitePackages}/torch/lib"
-          '';
-        });
-        nvidia-cusolver-cu12 = prev.nvidia-cusolver-cu12.overrideAttrs (old: {
-          buildInputs = (old.buildInputs or []) ++ cudaLibs;
-        });
-        nvidia-cusparse-cu12 = prev.nvidia-cusparse-cu12.overrideAttrs (old: {
-          buildInputs = (old.buildInputs or []) ++ cudaLibs;
-        });
+      overrides = pkgs.lib.composeExtensions (inputs.uv2nix_hammer_overrides.overrides_strict pkgs) (
+        final: prev: {
+          # additional overlays
+          # torch 2.5.1 in uv2nix_hammer_overrides -> torch 2.6.0
+          torch = prev.torch.overrideAttrs (old: {
+            buildInputs = (old.buildInputs or []) ++ [pkgs.cudaPackages.cusparselt];
+          });
+        }
+      );
 
-        # librosa
-        numba = prev.numba.overrideAttrs (old: {
-          autoPatchelfIgnoreMissingDeps = true;
-        });
-        soundfile = prev.soundfile.overrideAttrs (old: {
-          postInstall = ''
-            pushd "$out/${final.python.sitePackages}"
-            substituteInPlace soundfile.py \
-              --replace-warn "_find_library('sndfile')" "'${pkgs.libsndfile.out}/lib/libsndfile${pkgs.stdenv.hostPlatform.extensions.sharedLibrary}'"
-            popd
-          '';
-        });
-      };
-
-      python = pkgs.python313;
       # Construct package set
       pythonSet =
         # Use base package set from pyproject.nix builders
-        (pkgs.callPackage pyproject-nix.build.packages {
+        (pkgs.callPackage inputs.pyproject-nix.build.packages {
           inherit python;
         }).overrideScope (lib.composeManyExtensions [
-            pyproject-build-systems.overlays.default
-            overlay
-            pyprojectOverrides
+            inputs.pyproject-build-systems.overlays.default
+            uvLockedOverlay
+            overrides
         ]);
 
+      # Create an overlay enabling editable mode for all local dependencies.
+      editableOverlay = workspace.mkEditablePyprojectOverlay {
+        root = "$REPO_ROOT";
+      };
+
+      # Override previous set with our editable overlay.
+      editablePythonSet = pythonSet.overrideScope (
+        lib.composeManyExtensions [
+          editableOverlay
+
+          # Apply fixups for building an editable package of workspace packages
+          (final: prev: builtins.listToAttrs [{
+            name = projectName;
+            value = prev.${projectName}.overrideAttrs (old: {
+              src = lib.fileset.toSource {
+                root = old.src;
+                # Filter the sources going into editable build (files available to build system)
+                # so the editable package doesn't have to be rebuilt on every change.
+                # readme, pyproject.toml and __init__.py is minimal requirement for hatchling to build
+                fileset = lib.fileset.unions [
+                  (old.src + /pyproject.toml)
+                  (old.src + /README.md)
+                  (old.src + /${projectName}/__init__.py)
+                ];
+              };
+
+              # hatchling dependency
+              nativeBuildInputs = old.nativeBuildInputs ++ final.resolveBuildSystem { editables = []; };
+            });
+          }])
+        ]
+      );
+
+
       # Enable all optional dependencies for development.
-      virtualenv = pythonSet.mkVirtualEnv "beatdetect-dev-env" workspace.deps.all;
+      virtualenv = editablePythonSet.mkVirtualEnv
+        "${projectName}-dev-env"
+        workspace.deps.all  # uses deps from pyproject.toml [project.dependencies]
+      ;
     in {
+      packages.default = pythonSet.mkVirtualEnv "${projectName}-env" workspace.deps.default;
       devShells.default = pkgs.mkShell {
         packages = [virtualenv] ++ (with pkgs; [
           uv
@@ -122,11 +122,6 @@
 
           # Prevent uv from downloading managed Python's
           UV_PYTHON_DOWNLOADS = "never";
-        # } // lib.optionalAttrs pkgs.stdenv.isLinux {
-        #   # Python libraries often load native shared objects using dlopen(3).
-        #   # Setting LD_LIBRARY_PATH makes the dynamic library loader aware of libraries without using RPATH for lookup.
-        #   LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath (cudaLibs ++ pkgs.pythonManylinuxPackages.manylinux1);
-        #   XLA_FLAGS = "--xla_gpu_cuda_data_dir=${pkgs.cudaPackages.cudatoolkit}";
         };
 
         shellHook = ''
