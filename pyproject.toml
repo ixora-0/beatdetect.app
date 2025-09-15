@@ -27,6 +27,7 @@ build-backend = "hatchling.build"
 
 [tool.uv.sources]
 torch = [{ index = "pytorch-cu126" }]
+torchaudio = [{ index = "pytorch-cu126" }]
 
 [[tool.uv.index]]
 name = "pytorch-cu126"
