@@ -11,7 +11,7 @@ class PathResolver:
 
     def resolve_annotations_dir(self, cleaned=True) -> Path:
         p = (
-            self.paths.data.interim.cleaned_annotations
+            self.paths.data.interim.annotations
             if cleaned
             else self.paths.data.raw.annotations
         )

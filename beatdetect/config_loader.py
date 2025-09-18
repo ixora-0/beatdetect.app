@@ -11,7 +11,7 @@ class RawPaths(BaseModel):
 
 
 class InterimPaths(BaseModel):
-    cleaned_annotations: Path
+    annotations: Path
 
 
 class ProcessedPaths(BaseModel):

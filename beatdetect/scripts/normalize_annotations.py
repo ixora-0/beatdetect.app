@@ -45,16 +45,14 @@ def main(config: Config):
 
         # determine the output path
         relative_path = input_path.relative_to(config.paths.data.raw.annotations)
-        output_path = config.paths.data.interim.cleaned_annotations / relative_path
+        output_path = config.paths.data.interim.annotations / relative_path
         output_path.parent.mkdir(parents=True, exist_ok=True)
 
         if normalize_annotation(input_path, output_path):
             cleaned_files += 1
 
     print(f"Total files processed: {total_files}")
-    print(
-        f"Files saved to {config.paths.data.interim.cleaned_annotations}: {cleaned_files}"
-    )
+    print(f"Files saved to {config.paths.data.interim.annotations}: {cleaned_files}")
 
 
 if __name__ == "__main__":

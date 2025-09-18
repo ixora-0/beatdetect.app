@@ -40,7 +40,7 @@ annotations = "data/raw/annotations"
 spectrograms = "data/raw/spectrogram"
 
 [paths.data.interim]
-cleaned_annotations = "data/interim/annotations"
+annotations = "data/interim/annotations"
 
 [paths.data.processed]
 encoded_beats = "data/processed/encoded-annotations"
