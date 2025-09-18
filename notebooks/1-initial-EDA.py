@@ -1,8 +1,6 @@
-
-
 import marimo
 
-__generated_with = "0.13.2"
+__generated_with = "0.15.3"
 app = marimo.App(width="medium")
 
 
@@ -18,35 +16,13 @@ def _():
     import torch
     import torchaudio
 
-    from beatdetect import (
-        ANNOTATIONS_PROCESSED_PATH,
-        ANNOTATIONS_RAW_PATH,
-        DATASETS,
-        SPECTROGRAMS_RAW_PATH,
-    )
-    from beatdetect.histogram_params import (
-        F_MAX,
-        F_MIN,
-        HOP_LENGTH,
-        MEL_SCALE,
-        N_FFT,
-        N_MELS,
-        N_STFT,
-        SAMPLE_RATE,
-    )
+    from beatdetect.config_loader import load_config
+    from beatdetect.utils.paths import PathResolver
     return (
-        ANNOTATIONS_PROCESSED_PATH,
-        F_MAX,
-        F_MIN,
-        HOP_LENGTH,
-        MEL_SCALE,
-        N_FFT,
-        N_MELS,
-        N_STFT,
-        SAMPLE_RATE,
-        SPECTROGRAMS_RAW_PATH,
+        PathResolver,
         cs,
         librosa,
+        load_config,
         mo,
         np,
         pl,
@@ -56,6 +32,12 @@ def _():
     )
 
 
+@app.cell
+def _(load_config):
+    config = load_config()
+    return (config,)
+
+
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""# Load spectrogram dataset""")
@@ -63,10 +45,11 @@ def _(mo):
 
 
 @app.cell
-def _(SPECTROGRAMS_RAW_PATH, np):
+def _(PathResolver, config, np):
     dataset = "tapcorrect"
-    d = np.load(SPECTROGRAMS_RAW_PATH / dataset / f"{dataset}.npz")
-    return d, dataset
+    paths = PathResolver(config, dataset)
+    d = np.load(paths.spectrograms_file)
+    return d, paths
 
 
 @app.cell
@@ -93,7 +76,7 @@ def _(d, torch):
 def _(melspect, px):
     _start = 0
     _len = 500
-    px.imshow(melspect[_start:_start+_len, :].T, origin="lower")
+    px.imshow(melspect[_start : _start + _len, :].T, origin="lower")
     return
 
 
@@ -112,19 +95,7 @@ def _(mo):
 
 
 @app.cell
-def _(
-    F_MAX,
-    F_MIN,
-    HOP_LENGTH,
-    MEL_SCALE,
-    N_FFT,
-    N_MELS,
-    N_STFT,
-    SAMPLE_RATE,
-    melspect,
-    torch,
-    torchaudio,
-):
+def _(config, melspect, torch, torchaudio):
     # inverse the ln(1+1000x) scaling
     _melspect_scaled = (torch.exp(melspect) - 1) / 1000
 
@@ -136,34 +107,35 @@ def _(
 
     # inverse mel-scale spectrogram to power spectrogram
     _inversed_waveform = torchaudio.transforms.InverseMelScale(
-        n_mels=N_MELS,
-        sample_rate=SAMPLE_RATE,
-        n_stft=N_STFT,
-        f_min=F_MIN,
-        f_max=F_MAX,
-        mel_scale=MEL_SCALE
+        n_mels=config.spectrogram.n_mels,
+        sample_rate=config.spectrogram.sample_rate,
+        n_stft=config.spectrogram.n_stft,
+        f_min=config.spectrogram.f_min,
+        f_max=config.spectrogram.f_max,
+        mel_scale=config.spectrogram.mel_scale,
     )(_melspect_reshaped)
-    # inverse power spectrogram to waveform 
+    # inverse power spectrogram to waveform
     waveform = torchaudio.transforms.GriffinLim(
-        n_fft=N_FFT,
-        hop_length=HOP_LENGTH,
+        n_fft=config.spectrogram.n_fft,
+        hop_length=config.spectrogram.hop_length,
         power=1,
     )(_inversed_waveform)
     # output is shape [n_channels, time], assuming we have only 1 channel
     waveform = waveform[0]
-
     return (waveform,)
 
 
 @app.cell
-def _(SAMPLE_RATE, mo, waveform):
-    mo.audio(waveform.numpy(), rate=SAMPLE_RATE)
+def _(config, mo, waveform):
+    mo.audio(waveform.numpy(), rate=config.spectrogram.sample_rate)
     return
 
 
 @app.cell(hide_code=True)
 def _(mo):
-    mo.md(r"""Low quality audio because the power spectrograms doesn't have phase information for component frequencies.""")
+    mo.md(
+        r"""Low quality audio because the power spectrograms doesn't have phase information for component frequencies."""
+    )
     return
 
 
@@ -174,17 +146,10 @@ def _(mo):
 
 
 @app.cell
-def _(ANNOTATIONS_PROCESSED_PATH, dataset):
-    annotation_dataset_paths = [p for p in ANNOTATIONS_PROCESSED_PATH.iterdir() if p.is_dir()]
-    annotation_dataset_path = [p for p in annotation_dataset_paths if p.name == dataset][0]
-    return (annotation_dataset_path,)
-
-
-@app.cell
-def _(annotation_dataset_path, fn, pl):
+def _(fn, paths, pl):
     _annotation_file_name = fn.removesuffix("/track") + ".beats"
     beat_df = pl.read_csv(
-        annotation_dataset_path / "annotations/beats" / _annotation_file_name,
+        paths.resolve_annotations_dir(cleaned=True) / _annotation_file_name,
         separator="\t",
         has_header=False,
     )
@@ -199,13 +164,17 @@ def _(mo):
 
 
 @app.cell
-def _(SAMPLE_RATE, beat_df, px, torch, waveform):
+def _(beat_df, config, px, torch, waveform):
     _start = 10
     _len = 30
-    _waveform_slice = waveform[_start*SAMPLE_RATE:(_start+_len)*SAMPLE_RATE]
+    _waveform_slice = waveform[
+        _start * config.spectrogram.sample_rate : (_start + _len)
+        * config.spectrogram.sample_rate
+    ]
 
     _fig = px.line(
-        x=_start + torch.arange(len(_waveform_slice)) / SAMPLE_RATE,
+        x=_start
+        + torch.arange(len(_waveform_slice)) / config.spectrogram.sample_rate,
         y=_waveform_slice,
         title="Waveform with beats",
         width=1000,
@@ -248,23 +217,26 @@ def _(mo):
 
 
 @app.cell
-def _(SAMPLE_RATE, beat_df, cs, librosa, mo, waveform):
+def _(beat_df, config, cs, librosa, mo, waveform):
     _beats = librosa.clicks(
         times=beat_df.select(cs.by_index(0)),
-        sr=SAMPLE_RATE,
+        sr=config.spectrogram.sample_rate,
         click_freq=1000.0,
         click_duration=0.1,
-        length=len(waveform)
+        length=len(waveform),
     )
     _downbeats = librosa.clicks(
         times=beat_df.filter(cs.by_index(1) == 1).select(cs.by_index(0)),
-        sr=SAMPLE_RATE,
+        sr=config.spectrogram.sample_rate,
         click_freq=1500.0,
         click_duration=0.15,
-        length=len(waveform)
+        length=len(waveform),
     )
     _click_volume = 0.05
-    mo.audio(_click_volume * _beats + _click_volume * _downbeats + waveform.numpy(), rate=SAMPLE_RATE)
+    mo.audio(
+        _click_volume * _beats + _click_volume * _downbeats + waveform.numpy(),
+        rate=config.spectrogram.sample_rate,
+    )
     return
 
 
