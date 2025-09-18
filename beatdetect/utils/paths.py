@@ -23,7 +23,11 @@ class PathResolver:
 
     @property
     def encoded_beats_dir(self) -> Path:
-        return self.paths.data.processed.encoded_beats / self.dataset
+        return self.paths.data.processed.encoded_beats / self.dataset / "beats"
+
+    @property
+    def encoded_downbeats_dir(self) -> Path:
+        return self.paths.data.processed.encoded_beats / self.dataset / "downbeats"
 
     @property
     def spectral_flux_dir(self) -> Path:

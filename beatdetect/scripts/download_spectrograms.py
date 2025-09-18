@@ -86,7 +86,7 @@ def wait_for_transfer(download_path: pathlib.Path) -> None:
         time.sleep(INTERVAL)
 
 
-def main(config: Config, remote: bool):
+def main(config: Config, remote: bool = False):
     """Download datasets"""
     config.paths.downloads.mkdir(parents=True, exist_ok=True)
 
