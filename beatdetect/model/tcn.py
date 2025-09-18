@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from pytorch_tcn import TCN
 
-from beatdetect.histogram_params import N_MELS
+from ..config_loader import Config
 
 kernel_size = 3
 tcn1_channels = [80, 55, 35, 25, 15]
@@ -11,11 +11,11 @@ tcn2_channels = [16] * 8
 
 
 class BeatDetectTCN(nn.Module):
-    def __init__(self):
+    def __init__(self, config: Config):
         super().__init__()
 
         self.tcn1 = TCN(
-            num_inputs=N_MELS,
+            num_inputs=config.spectrogram.n_mels,
             num_channels=tcn1_channels,
             kernel_size=kernel_size,
             dropout=0.1,

@@ -1,25 +1,28 @@
 import argparse
+import textwrap
 
 import librosa
 import numpy as np
 import torch
 import torchaudio
 
-from beatdetect import (
-    DATASETS,
-    SPECTRAL_FLUX_PATH,
-    SPECTROGRAMS_RAW_PATH,
-)
-from beatdetect.histogram_params import HOP_LENGTH, SAMPLE_RATE
+from beatdetect.utils.paths import PathResolver
+
+from ..config_loader import Config, load_config
 
 
-def main(specified_dataset=None):
-    print(f"Saving spectral flux files into {SPECTRAL_FLUX_PATH}")
+def main(config: Config, specified_dataset=None):
+    print(
+        f"Saving spectral flux files into {config.paths.data.processed.spectral_flux}"
+    )
+    datasets = [specified_dataset] if specified_dataset else config.downloads.datasets
     count = 0
-    for dataset in DATASETS if specified_dataset is None else [specified_dataset]:
-        spectrograms = np.load(SPECTROGRAMS_RAW_PATH / dataset / f"{dataset}.npz")
-        spectral_flux_dir = SPECTRAL_FLUX_PATH / dataset
+    for dataset in datasets:
+        paths = PathResolver(config, dataset)
+        spectrograms = np.load(paths.spectrograms_file)
+        spectral_flux_dir = config.paths.data.processed.spectral_flux / dataset
         spectral_flux_dir.mkdir(parents=True, exist_ok=True)
+
         for file_name in spectrograms:
             if not file_name.endswith("/track"):
                 continue
@@ -31,8 +34,8 @@ def main(specified_dataset=None):
             log_melspect = torchaudio.transforms.AmplitudeToDB(stype="power")(melspect)
             spectral_flux = librosa.onset.onset_strength(
                 S=log_melspect.T,
-                sr=SAMPLE_RATE,
-                hop_length=HOP_LENGTH,
+                sr=config.spectrogram.sample_rate,
+                hop_length=config.spectrogram.hop_length,
                 lag=2,
                 max_size=3,
             )
@@ -48,8 +51,12 @@ def main(specified_dataset=None):
 
 
 if __name__ == "__main__":
+    config = load_config()
     parser = argparse.ArgumentParser(
-        description=f"Generate spectral flux from spectrograms, and save them to {SPECTRAL_FLUX_PATH}."
+        description=textwrap.dedent(f"""
+            Generate spectral flux from spectrograms,
+            and save them to {config.paths.data.processed.spectral_flux}.
+        """)
     )
     parser.add_argument(
         "--dataset",
@@ -58,4 +65,4 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    main(args.dataset)
+    main(config, args.dataset)

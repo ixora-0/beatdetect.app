@@ -1,28 +1,30 @@
 import argparse
+import textwrap
 
 import numpy as np
 import polars as pl
 import torch
 import torch.nn.functional as F
 
-from beatdetect import (
-    ANNOTATIONS_PROCESSED_PATH,
-    DATASETS,
-    ENCODED_BEATS_PATH,
-    SPECTROGRAMS_RAW_PATH,
-)
-from beatdetect.histogram_params import HOP_LENGTH, SAMPLE_RATE
+from ..config_loader import Config, load_config
+from ..utils.paths import PathResolver
 
 
-def main(specified_dataset=None):
-    print(f"Saving smoothed one hot-encoded annotations into {ENCODED_BEATS_PATH}")
-    fps = SAMPLE_RATE / HOP_LENGTH
+def main(config: Config, specified_dataset: str | None = None):
+    print(
+        "Saving smoothed one hot-encoded annotations into"
+        f"{config.paths.data.processed.encoded_beats}"
+    )
+
     count = 0
-    for dataset in DATASETS if specified_dataset is None else [specified_dataset]:
-        spectrograms = np.load(SPECTROGRAMS_RAW_PATH / dataset / f"{dataset}.npz")
-        annotations_dir = ANNOTATIONS_PROCESSED_PATH / dataset / "annotations" / "beats"
-        encoded_dir = ENCODED_BEATS_PATH / dataset
-        encoded_dir.mkdir(parents=True, exist_ok=True)
+    datasets = [specified_dataset] if specified_dataset else config.downloads.datasets
+    for dataset in datasets:
+        paths = PathResolver(config, dataset)
+        annotations_dir = paths.resolve_annotations_dir()
+
+        paths.encoded_beats_dir.mkdir(parents=True, exist_ok=True)
+
+        spectrograms = np.load(paths.spectrograms_file)
 
         for path in annotations_dir.glob("*.beats"):
             print(f"\033[KProcessing file {path}", end="\r")
@@ -38,7 +40,7 @@ def main(specified_dataset=None):
             beat_times = beat_df.to_numpy()[:, 0]
 
             # one hot encode
-            indices = np.round(beat_times * fps).astype(int)
+            indices = np.round(beat_times * config.spectrogram.fps).astype(int)
             indices = np.clip(indices, 0, num_frames - 1)
             onehot = torch.zeros(num_frames)
             onehot[indices] = 1
@@ -63,7 +65,7 @@ def main(specified_dataset=None):
             center_weight = gauss[half]
             smoothed = smoothed / center_weight
 
-            torch.save(smoothed, encoded_dir / f"{name}.pt")
+            torch.save(smoothed, paths.encoded_beats_dir / f"{name}.pt")
             count += 1
 
     print()
@@ -71,8 +73,12 @@ def main(specified_dataset=None):
 
 
 if __name__ == "__main__":
+    config = load_config()
     parser = argparse.ArgumentParser(
-        description=f"One hot-encode beat annotations, smoothen it, and save them to {ENCODED_BEATS_PATH}."
+        description=textwrap.dedent(f"""
+            One hot-encode beat annotations, smoothen it,
+            and save them to {config.paths.data.processed.encoded_beats}.
+        """)
     )
     parser.add_argument(
         "--dataset",
@@ -81,4 +87,4 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    main(args.dataset)
+    main(config, args.dataset)

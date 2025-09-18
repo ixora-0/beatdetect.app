@@ -1,18 +1,20 @@
 import json
 
-from beatdetect import ANNOTATIONS_PROCESSED_PATH, ANNOTATIONS_RAW_PATH, DATASETS
-from beatdetect.utils import JSON
+from ..config_loader import Config, load_config
+from ..utils import JSON
 
 
-def main():
+def main(config: Config):
+    inp = config.paths.data.raw.annotations
     combined_info: dict[str, JSON] = {}
-    for dataset in DATASETS:
-        info_file_path = ANNOTATIONS_RAW_PATH / dataset / "info.json"
-        with open(info_file_path, "r") as f:
+    for dataset in config.downloads.datasets:
+        info_file_path = inp / dataset / "info.json"
+        with open(info_file_path) as f:
             combined_info[dataset] = json.load(f)
 
-    ANNOTATIONS_PROCESSED_PATH.mkdir(parents=True, exist_ok=True)
-    combined_info_path = ANNOTATIONS_PROCESSED_PATH / "info.json"
+    out = config.paths.data.interim.cleaned_annotations
+    out.mkdir(parents=True, exist_ok=True)
+    combined_info_path = out / "info.json"
     with open(combined_info_path, "w") as f:
         json.dump(combined_info, f, indent=2)
 
@@ -20,4 +22,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    main(load_config())

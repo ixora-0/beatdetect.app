@@ -3,6 +3,7 @@ import datetime
 import math
 import pathlib
 import shutil
+import textwrap
 import time
 import zipfile
 from typing import NotRequired, TypedDict
@@ -13,14 +14,8 @@ from pypdl import Pypdl
 from tqdm.auto import tqdm
 from tqdm.utils import CallbackIOWrapper
 
-from beatdetect import (
-    DATASETS,
-    DOWNLOADS_PATH,
-    RC_API_URL,
-    SPECTROGRAMS_RAW_PATH,
-    SPECTROGRAMS_URL_TEMPLATE,
-)
-from beatdetect.utils import JSON
+from ..config_loader import Config, load_config
+from ..utils import JSON
 
 
 class Stats(TypedDict):
@@ -46,9 +41,9 @@ def format_bytes(n: float) -> str:
     return f"{n / (2 ** (10 * idx)):.2f} {units[idx]}"
 
 
-def get_transfer_stats(path: pathlib.Path) -> Stats | None:
+def get_transfer_stats(path: pathlib.Path, rc_api_url: str) -> Stats | None:
     """Get transfer stats from rclone remote control server for a given path."""
-    endpoint = urljoin(RC_API_URL, "core/stats")
+    endpoint = urljoin(rc_api_url, "core/stats")
     resp = requests.post(endpoint)
     stats: JSON = resp.json()
     transferring: list[Stats] = stats.get("transferring", [])
@@ -91,27 +86,27 @@ def wait_for_transfer(download_path: pathlib.Path) -> None:
         time.sleep(INTERVAL)
 
 
-def main(remote: bool):
+def main(config: Config, remote: bool):
     """Download datasets"""
-    DOWNLOADS_PATH.mkdir(parents=True, exist_ok=True)
+    config.paths.downloads.mkdir(parents=True, exist_ok=True)
 
     dl = Pypdl(allow_reuse=True)
-    for dataset in DATASETS[12:]:
+    for dataset in config.downloads.datasets[:]:
         filename = f"{dataset}.zip"
-        download_path = DOWNLOADS_PATH / filename
+        download_path = config.paths.downloads / filename
 
         # downloading
         if download_path.is_file():
             print(f"Skipping downloading {dataset}, {download_path} exists")
         else:
-            url = SPECTROGRAMS_URL_TEMPLATE.substitute(dataset=dataset)
+            url = config.downloads.spectrograms.url_template.substitute(dataset=dataset)
             print(f"Downloading {dataset}.")
             print(f"Fetching from {url} into {download_path}")
+            # should have try except here
             dl.start(
                 url,
                 str(download_path),
                 retries=3,
-                clear_terminal=False,
                 segments=SEGMENTS,
                 overwrite=False,
             )
@@ -122,7 +117,10 @@ def main(remote: bool):
             wait_for_transfer(download_path)
 
         # now safe to unzip
-        unzip_path = SPECTROGRAMS_RAW_PATH / dataset
+        unzip_path = config.paths.data.raw.spectrograms / dataset
+        if unzip_path.is_dir():
+            print(f"Skipping extracting {dataset}, {download_path} exists")
+            continue
         unzip_path.mkdir(parents=True, exist_ok=True)
         with (
             zipfile.ZipFile(download_path) as zf,
@@ -141,9 +139,11 @@ def main(remote: bool):
 
 
 if __name__ == "__main__":
+    config = load_config()
+
     parser = argparse.ArgumentParser(
         description="Download datasets from {}".format(
-            SPECTROGRAMS_URL_TEMPLATE.substitute(dataset="<dataset>")
+            config.downloads.spectrograms.url_template.substitute(dataset="<dataset>")
         )
     )
 
@@ -151,9 +151,12 @@ if __name__ == "__main__":
         "--remote",
         action="store_true",
         default=False,
-        help=f"{DOWNLOADS_PATH} is remote and mounted using rclone with remote control server at {RC_API_URL}.",
+        help=textwrap.dedent(f"""
+            {config.paths.downloads} is remote and mounted using rclone
+            with remote control server at {config.downloads.rc_api_url}.
+         """),
     )
 
     args = parser.parse_args()
 
-    main(args.remote)
+    main(config, args.remote)

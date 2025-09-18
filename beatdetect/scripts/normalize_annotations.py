@@ -1,31 +1,28 @@
-import pathlib
 import re
+from pathlib import Path
 
-from beatdetect import ANNOTATIONS_PROCESSED_PATH, ANNOTATIONS_RAW_PATH
-from beatdetect.utils import iterate_beat_files
+from ..config_loader import Config, load_config
+from ..utils.paths import iterate_beat_files
 
 
-def normalize_annotation(path: pathlib.Path) -> bool:
+def normalize_annotation(input_path: Path, output_path: Path) -> bool:
     """
-    Clean a beat file by replacing inconsistent separators with a single tab and save it to the processed path.
+    Clean a beat file by replacing inconsistent separators with a single tab
+    and save it to the processed path.
 
     Args:
         input_path (pathlib.Path): The path to the original beat file.
+        output_path (pathlib.Path): Destination of clean beat file to save to.
 
     Returns:
         bool: True if the file was cleaned and saved, False otherwise.
     """
     try:
-        with open(path, "r") as file:
+        with open(input_path) as file:
             original_content = file.read()
 
         # replace inconsistent separators with a single tab
         new_content = re.sub(r"[\t ]+", "\t", original_content)
-
-        # determine the output path in ANNOTATIONS_PROCESSED_PATH
-        relative_path = path.relative_to(ANNOTATIONS_RAW_PATH)
-        output_path = ANNOTATIONS_PROCESSED_PATH / relative_path
-        output_path.parent.mkdir(parents=True, exist_ok=True)
 
         # write cleaned content to new location
         with open(output_path, "w") as file:
@@ -34,23 +31,32 @@ def normalize_annotation(path: pathlib.Path) -> bool:
         return True
 
     except Exception as e:
-        print(f"Error processing {path}, skipping. Error: {e}")
+        print(f"Error processing {input_path}, skipping. Error: {e}")
         return False
 
 
-def main():
+def main(config: Config):
+    beat_files = iterate_beat_files(config, processed=False)
     total_files = 0
-    processed_files = 0
-
-    for idx, input_path in enumerate(iterate_beat_files(processed=False), 1):
+    cleaned_files = 0
+    for idx, input_path in enumerate(beat_files, 1):
         total_files += 1
         print(f"\033[KProcessing file #{idx}: {input_path}", end="\r")
-        if normalize_annotation(input_path):
-            processed_files += 1
+
+        # determine the output path
+        relative_path = input_path.relative_to(config.paths.data.raw.annotations)
+        output_path = config.paths.data.interim.cleaned_annotations / relative_path
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+
+        if normalize_annotation(input_path, output_path):
+            cleaned_files += 1
 
     print(f"Total files processed: {total_files}")
-    print(f"Files saved to {ANNOTATIONS_PROCESSED_PATH}: {processed_files}")
+    print(
+        f"Files saved to {config.paths.data.interim.cleaned_annotations}: {cleaned_files}"
+    )
 
 
 if __name__ == "__main__":
-    main()
+    config = load_config()
+    main(config)
