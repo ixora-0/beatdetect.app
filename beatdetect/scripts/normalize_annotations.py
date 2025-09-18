@@ -36,7 +36,7 @@ def normalize_annotation(input_path: Path, output_path: Path) -> bool:
 
 
 def main(config: Config):
-    beat_files = iterate_beat_files(config, processed=False)
+    beat_files = iterate_beat_files(config, cleaned=False)
     total_files = 0
     cleaned_files = 0
     for idx, input_path in enumerate(beat_files, 1):

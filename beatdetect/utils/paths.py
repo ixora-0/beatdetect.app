@@ -34,16 +34,16 @@ class PathResolver:
         return self.paths.data.processed.spectral_flux / self.dataset
 
 
-def iterate_beat_files(config: Config, processed=True, has_downbeats=True):
+def iterate_beat_files(config: Config, cleaned=True, has_downbeats=True):
     path = (
-        config.paths.data.processed.annotations
-        if processed
+        config.paths.data.interim.annotations
+        if cleaned
         else config.paths.data.raw.annotations
     )
     if not path.exists():
         raise FileNotFoundError(f"{path} doesn't exist.")
 
-    if processed:
+    if cleaned:
         with (path / "info.json").open("r") as f:
             info = json.load(f)
     else:
