@@ -97,7 +97,8 @@ class Config(BaseModel):
     training: TrainingConfig
 
 
-def load_config(path: Path = Path("configs/dev.toml")) -> Config:
+def load_config(path: str | Path = "configs/dev.toml") -> Config:
+    path = Path(path)
     with path.open("rb") as f:
         cfg_dict = tomllib.load(f)
     return Config(**cfg_dict)

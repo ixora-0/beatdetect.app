@@ -20,6 +20,7 @@ dependencies = [
   "torchinfo>=1.8.0",
   "torchview>=0.2.7",
   "tqdm>=4.67.1",
+  "typer>=0.17.4",
 ]
 
 [build-system]
@@ -34,6 +35,9 @@ torchaudio = [{ index = "pytorch-cu126" }]
 name = "pytorch-cu126"
 url = "https://download.pytorch.org/whl/cu126"
 explicit = true
+
+[project.scripts]
+beatdetect = "beatdetect.cli:app"
 
 [tool.marimo.runtime]
 auto_instantiate = false
