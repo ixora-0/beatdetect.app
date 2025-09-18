@@ -1,8 +1,6 @@
-
-
 import marimo
 
-__generated_with = "0.13.2"
+__generated_with = "0.15.3"
 app = marimo.App(width="full")
 
 
@@ -22,21 +20,13 @@ def _():
     import torchaudio
     from plotly.subplots import make_subplots
 
-    from beatdetect import ANNOTATIONS_PROCESSED_PATH, SPECTROGRAMS_RAW_PATH
-    from beatdetect.histogram_params import (
-        HOP_LENGTH,
-        N_FFT,
-        N_MELS,
-        N_STFT,
-        SAMPLE_RATE,
-    )
+    from beatdetect.config_loader import load_config
+    from beatdetect.utils.paths import PathResolver
     return (
-        ANNOTATIONS_PROCESSED_PATH,
-        HOP_LENGTH,
-        SAMPLE_RATE,
-        SPECTROGRAMS_RAW_PATH,
+        PathResolver,
         go,
         librosa,
+        load_config,
         make_subplots,
         mir_eval,
         mo,
@@ -48,19 +38,25 @@ def _():
     )
 
 
+@app.cell
+def _(load_config):
+    config = load_config()
+    return (config,)
+
+
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(
         r"""
-        # Purpose
+    # Purpose
 
-        The goal of this notebook is to estimate the tempo and beat from musical audio signals using traditional signal processing techniques.
-        The methodology we follow is described in:
+    The goal of this notebook is to estimate the tempo and beat from musical audio signals using traditional signal processing techniques.
+    The methodology we follow is described in:
 
-        Matthew E. P. Davies, M. (2021). _Tempo, Beat and Downbeat Estimation_. https://tempobeatdownbeat.github.io/tutorial/intro.html.
+    Matthew E. P. Davies, M. (2021). _Tempo, Beat and Downbeat Estimation_. https://tempobeatdownbeat.github.io/tutorial/intro.html.
 
-        See in Chapter 2, "Baseline approach", and "How do we evaluate?" sections for more details and justifications for the approach.
-        """
+    See in Chapter 2, "Baseline approach", and "How do we evaluate?" sections for more details and justifications for the approach.
+    """
     )
     return
 
@@ -78,33 +74,43 @@ def _(mo):
 
 
 @app.cell
-def _(SPECTROGRAMS_RAW_PATH, np, torch):
+def _(PathResolver, config, np, torch):
     dataset = "tapcorrect"
-    d = np.load(SPECTROGRAMS_RAW_PATH / dataset / f"{dataset}.npz")
+    paths = PathResolver(config, dataset)
+    d = np.load(paths.spectrograms_file)
     fn = d.files[0]
     melspect_raw = torch.from_numpy(d[fn]).to(torch.float32)
     melspect_raw.shape
-
-    return dataset, fn, melspect_raw
+    return fn, melspect_raw, paths
 
 
 @app.cell(hide_code=True)
 def _(mo):
-    mo.md(r"""Slice spectrogram into a smaller section for clearer visualization.""")
+    mo.md(
+        r"""Slice spectrogram into a smaller section for clearer visualization."""
+    )
     return
 
 
 @app.cell
-def _(HOP_LENGTH, SAMPLE_RATE, librosa, melspect_raw, np, px):
+def _(config, librosa, melspect_raw, np, px):
     start = 15
     length = 15
 
-    _start_frame, _end_frame = librosa.time_to_frames([start, start + length], sr=SAMPLE_RATE, hop_length=HOP_LENGTH)
+    _start_frame, _end_frame = librosa.time_to_frames(
+        [start, start + length],
+        sr=config.spectrogram.sample_rate,
+        hop_length=config.spectrogram.hop_length,
+    )
 
     melspect = melspect_raw[_start_frame:_end_frame, :]
 
     _xs_frames = np.arange(_start_frame, _end_frame)
-    xs = librosa.frames_to_time(_xs_frames, sr=SAMPLE_RATE, hop_length=HOP_LENGTH)
+    xs = librosa.frames_to_time(
+        _xs_frames,
+        sr=config.spectrogram.sample_rate,
+        hop_length=config.spectrogram.hop_length,
+    )
 
     px.imshow(
         melspect.T,
@@ -123,12 +129,10 @@ def _(mo):
 
 
 @app.cell
-def _(ANNOTATIONS_PROCESSED_PATH, dataset, fn, pl):
-    annotation_dataset_paths = [p for p in ANNOTATIONS_PROCESSED_PATH.iterdir() if p.is_dir()]
-    annotation_dataset_path = [p for p in annotation_dataset_paths if p.name == dataset][0]
+def _(fn, paths, pl):
     annotation_file_name = fn.removesuffix("/track") + ".beats"
     beat_df = pl.read_csv(
-        annotation_dataset_path / "annotations/beats" / annotation_file_name,
+        paths.resolve_annotations_dir(cleaned=True) / annotation_file_name,
         separator="\t",
         has_header=False,
     )
@@ -138,14 +142,18 @@ def _(ANNOTATIONS_PROCESSED_PATH, dataset, fn, pl):
 
 @app.cell(hide_code=True)
 def _(mo):
-    mo.md(r"""Ignoring downbeats for our purpose. Also trimming it down to our audio slice.""")
+    mo.md(
+        r"""Ignoring downbeats for our purpose. Also trimming it down to our audio slice."""
+    )
     return
 
 
 @app.cell
 def _(beat_df, length, start):
     annotated_beats = beat_df.to_numpy()[:, 0]
-    annotated_beats = annotated_beats[(annotated_beats >= start) & (annotated_beats <= start + length)]
+    annotated_beats = annotated_beats[
+        (annotated_beats >= start) & (annotated_beats <= start + length)
+    ]
     annotated_beats.shape
     return (annotated_beats,)
 
@@ -166,10 +174,10 @@ def _(mo):
 def _(mo):
     mo.md(
         r"""
-        ### Annotated (correct) tempo
+    ### Annotated (correct) tempo
 
-        Get tempo from median inter beat interval from annotations.
-        """
+    Get tempo from median inter beat interval from annotations.
+    """
     )
     return
 
@@ -185,23 +193,23 @@ def _(annotated_beats, np):
 def _(mo):
     mo.md(
         r"""
-        ### Spectral flux
+    ### Spectral flux
 
-        Get spectral flux. Measures how quickly the power spectrum of a signal changes over time, often used to detect audio onsets (ie. notes of instruments being hit). It is the difference in spectral content between the each frame and the its previous frame.
-        """
+    Get spectral flux. Measures how quickly the power spectrum of a signal changes over time, often used to detect audio onsets (ie. notes of instruments being hit). It is the difference in spectral content between the each frame and the its previous frame.
+    """
     )
     return
 
 
 @app.cell
-def _(HOP_LENGTH, SAMPLE_RATE, librosa, melspect, torchaudio):
+def _(config, librosa, melspect, torchaudio):
     # ibrosa.onset.onset_strength requires log-power spectrogram
     log_melspect = torchaudio.transforms.AmplitudeToDB(stype="power")(melspect)
 
     spectral_flux = librosa.onset.onset_strength(
         S=log_melspect.T,
-        sr=SAMPLE_RATE,
-        hop_length=HOP_LENGTH,
+        sr=config.spectrogram.sample_rate,
+        hop_length=config.spectrogram.hop_length,
         lag=2,
         max_size=3,
     )
@@ -227,6 +235,7 @@ def _(annotated_beats, go, make_subplots, melspect, np, px, spectral_flux, xs):
             showed_legend = True
 
         return beat_lines
+
 
     _fig = make_subplots(
         rows=2,
@@ -302,15 +311,19 @@ def _(mo):
 
 
 @app.cell
-def _(HOP_LENGTH, SAMPLE_RATE, go, inferred_tempo, librosa, spectral_flux, xs):
+def _(config, go, inferred_tempo, librosa, spectral_flux, xs):
     tempogram = librosa.feature.tempogram(
-        onset_envelope=spectral_flux, sr=SAMPLE_RATE, hop_length=HOP_LENGTH
+        onset_envelope=spectral_flux,
+        sr=config.spectrogram.sample_rate,
+        hop_length=config.spectrogram.hop_length,
     )
 
     # we just use librosa's implementation to get estimated tempo
     # but we still calcaulate tempogram and autocorrelation to plot and understand the approach
     estimated_tempo = librosa.feature.rhythm.tempo(
-        onset_envelope=spectral_flux, sr=SAMPLE_RATE, hop_length=HOP_LENGTH
+        onset_envelope=spectral_flux,
+        sr=config.spectrogram.sample_rate,
+        hop_length=config.spectrogram.hop_length,
     )[0]
 
 
@@ -350,14 +363,15 @@ def _(HOP_LENGTH, SAMPLE_RATE, go, inferred_tempo, librosa, spectral_flux, xs):
 
 @app.cell(hide_code=True)
 def _(mo):
-    mo.md(r"""Getting the autocorrelation of the spectral flux. Peaks in the first plot are time lags where the spectral flux pattern most closely matches itself, which corresponding to beat intervals. The second plot is on a BPM (frequency) scale instead of lag time (period). Peaks on the this plot is usually multiples and factors of the actual tempo. Estimated tempo is inferred from where the peaks are and also what are the most common BPM that we see in music (usually between 30 - 300 BPM).""")
+    mo.md(
+        r"""Getting the autocorrelation of the spectral flux. Peaks in the first plot are time lags where the spectral flux pattern most closely matches itself, which corresponding to beat intervals. The second plot is on a BPM (frequency) scale instead of lag time (period). Peaks on the this plot is usually multiples and factors of the actual tempo. Estimated tempo is inferred from where the peaks are and also what are the most common BPM that we see in music (usually between 30 - 300 BPM)."""
+    )
     return
 
 
 @app.cell
 def _(
-    HOP_LENGTH,
-    SAMPLE_RATE,
+    config,
     estimated_tempo,
     go,
     inferred_tempo,
@@ -374,11 +388,15 @@ def _(
 
     _xs_lag_time = x = np.linspace(
         0,
-        tempogram.shape[0] * float(HOP_LENGTH) / SAMPLE_RATE,
+        tempogram.shape[0]
+        * float(config.spectrogram.hop_length)
+        / config.spectrogram.sample_rate,
         num=tempogram.shape[0],
     )
     _xs_bpm_freqs = librosa.tempo_frequencies(
-        tempogram.shape[0], hop_length=HOP_LENGTH, sr=SAMPLE_RATE
+        tempogram.shape[0],
+        hop_length=config.spectrogram.hop_length,
+        sr=config.spectrogram.sample_rate,
     )[1:]
 
     # Create subplots
@@ -397,7 +415,12 @@ def _(
     ):
         _fig.add_trace(
             go.Scatter(
-                x=_xs_lag_time, y=y, name=name, showlegend=True, line_color=color, legendgroup=name
+                x=_xs_lag_time,
+                y=y,
+                name=name,
+                showlegend=True,
+                line_color=color,
+                legendgroup=name,
             ),
             row=1,
             col=1,
@@ -410,7 +433,12 @@ def _(
     ):
         _fig.add_trace(
             go.Scatter(
-                x=_xs_bpm_freqs, y=y, name=name, showlegend=False, line_color=color, legendgroup=name
+                x=_xs_bpm_freqs,
+                y=y,
+                name=name,
+                showlegend=False,
+                line_color=color,
+                legendgroup=name,
             ),
             row=2,
             col=1,
@@ -454,25 +482,29 @@ def _(
 def _(mo):
     mo.md(
         r"""
-        ## Estimate beats
+    ## Estimate beats
 
-        From the spectral flux and the estimated tempo, we can estimated beat locations using a dynamic programming approach described in section 6.3.2 of
+    From the spectral flux and the estimated tempo, we can estimated beat locations using a dynamic programming approach described in section 6.3.2 of
 
-        Müller, M. (2021). _Fundamentals of Music Processing_. https://doi.org/10.1007/978-3-030-69808-9
+    Müller, M. (2021). _Fundamentals of Music Processing_. https://doi.org/10.1007/978-3-030-69808-9
 
-        If finds an optimal sequence of beat locations that align with the expected periodicity of the rhythm. A Gaussian window is used to emphasize regions with periodic onsets, and a penalty function ensures that the intervals between detected beats are consistent with the estimated tempo. The algorithm traces back through the computed scores to reconstruct the most likely sequence of beat locations.
-        """
+    If finds an optimal sequence of beat locations that align with the expected periodicity of the rhythm. A Gaussian window is used to emphasize regions with periodic onsets, and a penalty function ensures that the intervals between detected beats are consistent with the estimated tempo. The algorithm traces back through the computed scores to reconstruct the most likely sequence of beat locations.
+    """
     )
     return
 
 
 @app.cell
-def _(HOP_LENGTH, SAMPLE_RATE, librosa, np):
+def _(config, librosa, np):
     def beat_track_dp(spectral_flux, estimated_tempo, tightness=100, alpha=0.5):
-        period = (60 * SAMPLE_RATE) / (estimated_tempo * HOP_LENGTH)  # in number of frames
+        period = (60 * config.spectrogram.sample_rate) / (
+            estimated_tempo * config.spectrogram.hop_length
+        )  # in number of frames
 
         # Convolves spectral flux with a Gaussian window (std=period) to emphasize regions with periodic onsets.
-        gaussian_window = np.exp(-0.5 * (np.arange(-period, period + 1) * 32.0 / period) ** 2)
+        gaussian_window = np.exp(
+            -0.5 * (np.arange(-period, period + 1) * 32.0 / period) ** 2
+        )
         local_score = np.convolve(gaussian_window, spectral_flux, mode="same")
 
         # cumulative_score[i] = best score of any beat‐chain ending exactly at frame i.
@@ -483,9 +515,11 @@ def _(HOP_LENGTH, SAMPLE_RATE, librosa, np):
 
         # Search range for previous beat
         # previous 2 periods -> 0.5 periods
-        search_window = np.arange(-2 * period, -np.round(period / 2) + 1, dtype=int)
+        search_window = np.arange(
+            -2 * period, -np.round(period / 2) + 1, dtype=int
+        )
 
-        # penalty[i] = gaussian-like penalty on how far the candidate interval deviates from the ideal period, controlled by tightness. 
+        # penalty[i] = gaussian-like penalty on how far the candidate interval deviates from the ideal period, controlled by tightness.
         # Deviation is -search_window[i] The closer deviation is to period, the smaller the penalty.
         penalty = -tightness * (np.log(-search_window / period) ** 2)
 
@@ -496,18 +530,21 @@ def _(HOP_LENGTH, SAMPLE_RATE, librosa, np):
             z_pad = max(0, min(-search_window[0], len(search_window)))
 
             # Score for all possible predecessors
-            candidate_scores = np.pad(
-                cumulative_score[search_window[z_pad:]],
-                (z_pad, 0),
-            ) + penalty
+            candidate_scores = (
+                np.pad(
+                    cumulative_score[search_window[z_pad:]],
+                    (z_pad, 0),
+                )
+                + penalty
+            )
 
             # Find the best preceding beat
             beat_location = np.argmax(candidate_scores)
 
             # Add the local score
-            cumulative_score[frame] = (1 - alpha) * score + alpha * candidate_scores[
-                beat_location
-            ]
+            cumulative_score[frame] = (
+                1 - alpha
+            ) * score + alpha * candidate_scores[beat_location]
 
             # Special case the first onset.  Stop if the localscore is small
             if is_first_beat and score < 0.01 * local_score.max():
@@ -519,7 +556,9 @@ def _(HOP_LENGTH, SAMPLE_RATE, librosa, np):
             # Update the time range
             search_window += 1
 
-        beats = [librosa.beat.__last_beat(cumulative_score)]  # last local max from cumulative_score
+        beats = [
+            librosa.beat.__last_beat(cumulative_score)
+        ]  # last local max from cumulative_score
 
         # Reconstruct the beat path from backlinks
         while backlink[beats[-1]] >= 0:
@@ -533,7 +572,11 @@ def _(HOP_LENGTH, SAMPLE_RATE, librosa, np):
         # beats = librosa.beat.__trim_beats(spectral_flux, beats, True)
 
         # Convert beat times seconds
-        beats = librosa.frames_to_time(beats, hop_length=HOP_LENGTH, sr=SAMPLE_RATE)
+        beats = librosa.frames_to_time(
+            beats,
+            hop_length=config.spectrogram.hop_length,
+            sr=config.spectrogram.sample_rate,
+        )
 
         return beats
     return (beat_track_dp,)
@@ -600,7 +643,9 @@ def _(annotated_beats, estimated_beats, mir_eval):
 
 @app.cell
 def _(annotated_beats, estimated_beats, mir_eval):
-    CMLc, CMLt, AMLc, AMLt = mir_eval.beat.continuity(annotated_beats, estimated_beats)
+    CMLc, CMLt, AMLc, AMLt = mir_eval.beat.continuity(
+        annotated_beats, estimated_beats
+    )
     AMLt
     return
 
