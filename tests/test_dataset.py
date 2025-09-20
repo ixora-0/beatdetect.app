@@ -7,7 +7,7 @@ import numpy as np
 import pytest
 import torch
 
-from beatdetect.dataset import BeatDataset
+from beatdetect.data import BeatDataset
 
 
 class TestBeatDataset:

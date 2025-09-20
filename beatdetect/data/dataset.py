@@ -2,8 +2,8 @@ import numpy as np
 import torch
 from torch.utils.data import Dataset
 
-from .config_loader import Config
-from .utils.paths import PathResolver
+from ..config_loader import Config
+from ..utils.paths import PathResolver
 
 
 class BeatDataset(Dataset):
