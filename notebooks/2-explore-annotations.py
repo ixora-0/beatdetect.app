@@ -176,5 +176,32 @@ def _(beats, downbeats, go, make_subplots, np):
     return
 
 
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""# Class imbalance""")
+    return
+
+
+@app.cell
+def _(PathResolver, config, torch):
+    ratios = {"beats": [], "downbeats": []}
+
+    for dataset in config.downloads.datasets:
+        _paths = PathResolver(config, dataset)
+        for _beats_file in _paths.encoded_beats_dir.glob("*.pt"):
+            _beats = torch.load(_beats_file).numpy()
+            ratios["beats"].append(_beats.shape[0] / sum(_beats))
+        for _downbeats_file in _paths.encoded_downbeats_dir.glob("*.pt"):
+            _downbeats = torch.load(_downbeats_file).numpy()
+            ratios["downbeats"].append(_downbeats.shape[0] / sum(_downbeats))
+    return (ratios,)
+
+
+@app.cell
+def _(px, ratios):
+    px.histogram(ratios, marginal="box")
+    return
+
+
 if __name__ == "__main__":
     app.run()
