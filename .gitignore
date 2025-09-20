@@ -11,7 +11,7 @@ wheels/
 .direnv
 
 # No data version control
-data
+/data/
 
 # pypdl logs
 pypdl.log
