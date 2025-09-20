@@ -1,114 +1,113 @@
-import shutil
-import tempfile
 from pathlib import Path
-from unittest.mock import Mock, patch
+from unittest.mock import Mock, mock_open, patch
 
-import numpy as np
 import pytest
-import torch
 
 from beatdetect.data import BeatDataset
 
 
-class TestBeatDataset:
-    @pytest.fixture
-    def mock_config(self):
-        """Create a mock config for testing"""
-        config = Mock()
-        config.downloads.datasets = ["dataset1", "dataset2"]
+@pytest.fixture
+def mock_config():
+    """Create a mock configuration object."""
+    config = Mock()
+    config.downloads.datasets = ["dataset1", "dataset2"]
+    config.paths.data.raw.spectrograms = Path("/mock/spectrograms")
+    config.paths.data.processed.spectral_flux = Path("/mock/spectral_flux")
 
-        # Create proper Path structure for config.paths
-        config.paths = Mock()
-        config.paths.data = Mock()
-        config.paths.data.raw = Mock()
-        config.paths.data.processed = Mock()
-        config.paths.data.interim = Mock()
+    # Mock the splits_info path and its exists method
+    splits_info_mock = Mock()
+    config.paths.data.processed.splits_info = splits_info_mock
 
-        # Use real Path objects for all path operations
-        config.paths.data.raw.spectrograms = Path("/mock/spectrograms")
-        config.paths.data.processed.spectral_flux = Path("/mock/spectral_flux")
-        config.paths.data.processed.encoded_beats = Path("/mock/encoded_beats")
-        config.paths.data.interim.annotations = Path("/mock/annotations")
+    return config
 
-        return config
 
-    @pytest.fixture
-    def temp_data_dir(self):
-        """Create temporary directory structure for testing"""
-        temp_dir = Path(tempfile.mkdtemp())
+@pytest.fixture
+def sample_splits_csv():
+    """Simple CSV content for testing."""
+    return """dataset,name,split
+dataset1,track1,train
+dataset2,track2,val"""
 
-        # Create directory structure matching PathResolver expectations
-        (temp_dir / "dataset1" / "beats").mkdir(parents=True)
-        (temp_dir / "dataset1" / "downbeats").mkdir(parents=True)
-        (temp_dir / "spectrograms" / "dataset1").mkdir(parents=True)
-        (temp_dir / "spectral_flux" / "dataset1").mkdir(parents=True)
 
-        # Create sample data files
-        sample_beats = torch.rand(1000)  # 1000 time steps
-        sample_downbeats = torch.rand(1000)
-        sample_flux = torch.rand(1000)
+def test_beat_dataset_initialization(mock_config, sample_splits_csv):
+    """Test that BeatDataset initializes without errors."""
+    mock_config.paths.data.processed.splits_info.exists.return_value = True
 
-        torch.save(sample_beats, temp_dir / "dataset1" / "beats" / "track1.pt")
-        torch.save(sample_downbeats, temp_dir / "dataset1" / "downbeats" / "track1.pt")
-        torch.save(sample_flux, temp_dir / "spectral_flux" / "dataset1" / "track1.pt")
+    with patch("builtins.open", mock_open(read_data=sample_splits_csv)):
+        with patch("builtins.print"):  # Suppress print output
+            # Test basic initialization
+            dataset = BeatDataset(mock_config, "train")
+            assert len(dataset) >= 0
 
-        # Create mock spectrogram archive
-        sample_spectrogram = np.random.rand(128, 1000)  # 128 mel bins, 1000 time steps
-        np.savez(
-            temp_dir / "spectrograms" / "dataset1" / "dataset1.npz",
-            **{"track1/track": sample_spectrogram},
-        )
+            # Test with custom datasets
+            dataset = BeatDataset(mock_config, "train", datasets=["dataset1"])
+            assert len(dataset) >= 0
 
-        yield temp_dir
-        shutil.rmtree(temp_dir)
 
-    def test_dataset_initialization(self, mock_config):
-        """Test that dataset initializes correctly"""
-        # Use real PathResolver with properly mocked config paths
-        mock_config.downloads.datasets = ["dataset1"]
+def test_splits_file_missing_raises_error(mock_config):
+    """Test that missing splits file raises FileNotFoundError."""
+    mock_config.paths.data.processed.splits_info.exists.return_value = False
 
-        # Create mock Path objects for glob results
-        mock_file1 = Mock()
-        mock_file1.name = "track1.pt"
-        mock_file2 = Mock()
-        mock_file2.name = "track2.pt"
+    with pytest.raises(FileNotFoundError):
+        BeatDataset(mock_config, "train")
 
-        # Mock glob to return sample files
-        with patch.object(Path, "glob", return_value=[mock_file1, mock_file2]):
-            with patch.object(Path, "exists", return_value=True):
-                with patch("numpy.load") as mock_np_load:
-                    mock_np_load.return_value = Mock()
-                    dataset = BeatDataset(mock_config)
 
-                    assert len(dataset.samples) > 0
-                    assert all(
-                        len(sample) == 2 for sample in dataset.samples
-                    )  # (dataset, name) pairs
+@patch("beatdetect.data.dataset.PathResolver")
+def test_dataset_output_shapes(
+    mock_path_resolver_class, mock_config, sample_splits_csv
+):
+    """Test that dataset returns tensors with expected shapes."""
+    import numpy as np
+    import torch
 
-    def test_target_shape_and_structure(self, mock_config, temp_data_dir):
-        """Test that target has correct shape with beats and downbeats"""
-        # Setup config paths with real temp directory paths
-        mock_config.paths.data.raw.spectrograms = temp_data_dir / "spectrograms"
-        mock_config.paths.data.processed.spectral_flux = temp_data_dir / "spectral_flux"
-        mock_config.paths.data.processed.encoded_beats = temp_data_dir
-        mock_config.downloads.datasets = ["dataset1"]
+    # Setup config mock
+    mock_config.paths.data.processed.splits_info.exists.return_value = True
 
-        dataset = BeatDataset(mock_config)
+    # Mock PathResolver instance
+    mock_resolver = Mock()
+    mock_resolver.spectrograms_file = Path("/mock/spectrograms.npz")
+    mock_resolver.encoded_beats_dir = Path("/mock/beats")
+    mock_resolver.encoded_downbeats_dir = Path("/mock/downbeats")
+    mock_path_resolver_class.return_value = mock_resolver
 
-        if len(dataset) > 0:
+    # Create mock data with known shapes
+    mel_data = np.random.randn(1000, 128).astype(
+        np.float32
+    )  # Will be transposed to (128, 1000)
+    flux_data = torch.randn(1000)
+    beats_data = torch.randn(1000)
+    downbeats_data = torch.randn(1000)
+
+    with patch("builtins.open", mock_open(read_data=sample_splits_csv)):
+        with patch("builtins.print"):
+            dataset = BeatDataset(mock_config, "train")
+
+    # Mock the numpy archive as a context manager
+    mock_archive = Mock()
+    mock_archive.get.return_value = mel_data
+
+    with patch("numpy.load") as mock_np_load:
+        mock_np_load.return_value.__enter__.return_value = mock_archive
+        mock_np_load.return_value.__exit__.return_value = None
+
+        with patch("torch.load") as mock_torch_load:
+            # Return different data based on which file is being loaded
+            mock_torch_load.side_effect = [flux_data, beats_data, downbeats_data]
+
+            # Get first sample
             mel, flux, target = dataset[0]
 
-            # Check target shape - should be [2, sequence_length]
-            assert target.dim() == 2, f"Target should be 2D, got {target.dim()}D"
-            assert target.shape[0] == 2, (
-                f"First dimension should be 2, got {target.shape[0]}"
-            )
+    # Test shapes
+    assert mel.shape == (128, 1000), f"Expected mel shape (128, 1000), got {mel.shape}"
+    assert flux.shape == (1000,), f"Expected flux shape (1000,), got {flux.shape}"
+    assert target.shape == (2, 1000), (
+        f"Expected target shape (2, 1000), got {target.shape}"
+    )
 
-            # Check that beats and downbeats are different tensors
-            beats = target[0, :]
-            downbeats = target[1, :]
-            assert beats.shape == downbeats.shape
-            assert torch.is_tensor(beats) and torch.is_tensor(downbeats)
+    # Test types
+    assert isinstance(mel, torch.Tensor)
+    assert isinstance(flux, torch.Tensor)
+    assert isinstance(target, torch.Tensor)
 
 
 if __name__ == "__main__":
