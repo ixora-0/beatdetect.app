@@ -33,10 +33,20 @@ def preprocess(config: str = "configs/dev.toml"):
 
 
 @app.command()
+def split(config: str = "configs/dev.toml"):
+    """Split processed data into train/validation/test sets and save the splits."""
+    from .scripts import make_splits
+
+    cfg = config_loader.load_config(config)
+    make_splits.main(cfg)
+
+
+@app.command()
 def prepare_data(config: str = "configs/dev.toml"):
     """Download and preprocess data"""
     download(config)
     preprocess(config)
+    split(config)
 
 
 @app.command()
