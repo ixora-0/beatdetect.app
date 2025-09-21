@@ -10,7 +10,7 @@ datasets = [
   # "candombe",
   # "filosax",
   # "groove_midi",
-  # "gtzan",
+  "gtzan",
   # "guitarset",
   # "hainsworth",
   # "harmonix",
@@ -61,4 +61,17 @@ train_ratio = 0.8
 val_ratio = 0.1
 # test_ratio = 0.1
 batch_size = 4
+
+[hypers]
 learning_rate = 1e-5
+dropout = 0.1
+
+[hypers.tcn1]
+kernel_size = 3
+channels = [80, 55, 35, 25, 15]
+dilations = [1, 2, 4, 8, 16]
+
+[hypers.tcn2]
+kernel_size = 3
+channels = [16, 16, 16, 16, 16, 16, 16, 16]
+dilations = [1, 2, 4, 8, 16, 32, 64, 128]

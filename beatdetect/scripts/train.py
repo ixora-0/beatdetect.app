@@ -8,7 +8,6 @@ from ..utils import set_seed
 
 
 def main(config: Config):
-    hypers = config.training
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     # --- datasets ---
@@ -18,20 +17,20 @@ def main(config: Config):
 
     train_loader = torch.utils.data.DataLoader(
         train_dataset,
-        batch_size=hypers.batch_size,
+        batch_size=config.training.batch_size,
         shuffle=True,
         collate_fn=collate_fn,
     )
     val_loader = torch.utils.data.DataLoader(
         val_dataset,
-        batch_size=hypers.batch_size,
+        batch_size=config.training.batch_size,
         shuffle=False,
         collate_fn=collate_fn,
     )
 
     # --- model ---
     model = BeatDetectTCN(config.spectrogram.n_mels).to(device)
-    optimizer = torch.optim.Adam(model.parameters(), lr=hypers.learning_rate)
+    optimizer = torch.optim.Adam(model.parameters(), lr=config.hypers.learning_rate)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
         optimizer, mode="min", factor=1 / 5, patience=5
     )

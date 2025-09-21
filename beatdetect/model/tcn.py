@@ -2,20 +2,20 @@ import torch
 import torch.nn as nn
 from pytorch_tcn import TCN
 
-kernel_size = 3
-tcn1_channels = [80, 55, 35, 25, 15]
-tcn2_channels = [16] * 8
+from ..config_loader import Config
 
 
 class BeatDetectTCN(nn.Module):
-    def __init__(self, num_inputs: int):
+    def __init__(self, config: Config):
         super().__init__()
+        hypers = config.hypers
 
         self.tcn1 = TCN(
-            num_inputs=num_inputs,  # should = n_mels
-            num_channels=tcn1_channels,
-            kernel_size=kernel_size,
-            dropout=0.1,
+            num_inputs=config.spectrogram.n_mels,
+            num_channels=hypers.tcn1.channels,
+            kernel_size=hypers.tcn1.kernel_size,
+            dilations=hypers.tcn1.dilations,
+            dropout=hypers.dropout,
             causal=False,
             use_norm="weight_norm",
             activation="relu",
@@ -23,10 +23,11 @@ class BeatDetectTCN(nn.Module):
         )
 
         self.tcn2 = TCN(
-            num_inputs=16,
-            num_channels=tcn2_channels,
-            kernel_size=kernel_size,
-            dropout=0.1,
+            num_inputs=hypers.tcn1.channels[-1] + 1,  # out of tcn1 + spectral flux
+            num_channels=hypers.tcn2.channels,
+            kernel_size=hypers.tcn2.kernel_size,
+            dilations=hypers.tcn2.dilations,
+            dropout=hypers.dropout,
             causal=False,
             use_norm="weight_norm",
             activation="relu",

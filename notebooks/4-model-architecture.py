@@ -53,7 +53,7 @@ def _(config):
 
 @app.cell
 def _(BeatDetectTCN, config, melspect_shape, spectral_flux_shape, torchview):
-    model = BeatDetectTCN(config.spectrogram.n_mels)
+    model = BeatDetectTCN(config)
     model_graph = torchview.draw_graph(
         model, input_size=(melspect_shape, spectral_flux_shape)
     )
@@ -81,7 +81,7 @@ def _(mo):
 
 
 @app.cell
-def _(kernel_size, tcn1_channels, tcn2_channels):
+def _(config):
     def receptive_field_duration(kernel_size, num_layers, dilation_base=2, fps=50):
         return (
             1
@@ -93,12 +93,12 @@ def _(kernel_size, tcn1_channels, tcn2_channels):
 
     print(
         "TCN #1: {}s".format(
-            receptive_field_duration(kernel_size, num_layers=len(tcn1_channels))
+            receptive_field_duration(config.hypers.tcn1.kernel_size, num_layers=len(config.hypers.tcn1.channels))
         )
     )
     print(
         "TCN #2: {}s".format(
-            receptive_field_duration(kernel_size, num_layers=len(tcn2_channels))
+            receptive_field_duration(config.hypers.tcn2.kernel_size, num_layers=len(config.hypers.tcn2.channels))
         )
     )
     return

@@ -83,11 +83,23 @@ class TrainingConfig(BaseModel):
     train_ratio: float
     val_ratio: float
     batch_size: int
-    learning_rate: float
 
     @property
     def test_ratio(self) -> float:
         return 1.0 - self.train_ratio - self.val_ratio
+
+
+class TCNConfig(BaseModel):
+    kernel_size: int
+    channels: list[int]
+    dilations: list[int]
+
+
+class HypersConfig(BaseModel):
+    learning_rate: float
+    dropout: float
+    tcn1: TCNConfig
+    tcn2: TCNConfig
 
 
 class Config(BaseModel):
@@ -96,6 +108,7 @@ class Config(BaseModel):
     downloads: Downloads
     spectrogram: SpectrogramConfig
     training: TrainingConfig
+    hypers: HypersConfig
 
 
 def load_config(path: str | Path = "configs/dev.toml") -> Config:
