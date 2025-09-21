@@ -31,13 +31,15 @@ def _(load_config):
 def _(mo):
     mo.md(
         r"""
-    This notebook designs the model architecture for beat detection in music, using temporal convolutional networks (TCNs). It takes a mel spectrogram and spectral flux as input, and outputs a sequence of beat confidence scores for each frame in the song. Specifically, we have two TCNs:
+    # Architecture description
+    467K total parameters. Two stages:
 
-    - `tcn1` processes the mel spectrogram. Its output is a 15-dimensional feature vector at each frame. With 5 layers, the receptive field is about 1 second (assuming 50 fps), so these features can capture local rhythmic events such as instrument onsets. The output of `tcn1` is concatenated with the spectral flux feature, producing a 16-channel sequence. This becomes the input to `tcn2`, which has 8 layers and a receptive field of roughly 10 seconds. This lets the model reason about longer-range rhythmic patterns such as bar- or phrase-level structure.
+    - Stage 1 (TCN1): A 16-layer TCN processes the combined mel spectrogram and spectral flux input. Receptive field = 10.86s
 
-    - `tcn2` outputs a 16-channel hidden representation, which is then projected by a final 1×1 convolution (logit_head) into two channels: one for beat probability and one for downbeat probability.
+    - Stage 2 (TCN2): A 4-layer TCN takes the TCN1 output concatenated with the predicted beats to detect downbeats. Uses more aggressive dilations over a 6.82s receptive field to identify measure-level structure.
 
-    Each TCN block uses dropout, weight normalization, and skip connections. At inference, the two output streams are passed through a sigmoid to yield per-frame confidence values for beats and downbeats.
+    The architecture follows the natural musical hierarchy where individual beats inform downbeat detection. The first network learns onset detection from low-level audio features, the second use both spectral representations and beat context to identify downbeats that mark musical measures.
+
     """
     )
     return
@@ -82,23 +84,31 @@ def _(mo):
 
 @app.cell
 def _(config):
-    def receptive_field_duration(kernel_size, num_layers, dilation_base=2, fps=50):
-        return (
-            1
-            + (kernel_size - 1)
-            * (dilation_base**num_layers - 1)
-            / (dilation_base - 1)
-        ) / fps
+    def receptive_field_duration(
+        kernel_size, num_layers, dilations, fps=config.spectrogram.fps
+    ):
+        w = 1
+        for layer in range(num_layers):
+            w += (kernel_size - 1) * dilations[layer]
+        return w / fps
 
 
     print(
         "TCN #1: {}s".format(
-            receptive_field_duration(config.hypers.tcn1.kernel_size, num_layers=len(config.hypers.tcn1.channels))
+            receptive_field_duration(
+                config.hypers.tcn1.kernel_size,
+                len(config.hypers.tcn1.channels),
+                config.hypers.tcn1.dilations,
+            )
         )
     )
     print(
         "TCN #2: {}s".format(
-            receptive_field_duration(config.hypers.tcn2.kernel_size, num_layers=len(config.hypers.tcn2.channels))
+            receptive_field_duration(
+                config.hypers.tcn2.kernel_size,
+                len(config.hypers.tcn2.channels),
+                config.hypers.tcn2.dilations,
+            )
         )
     )
     return

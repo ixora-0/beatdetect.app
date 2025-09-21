@@ -68,10 +68,10 @@ dropout = 0.1
 
 [hypers.tcn1]
 kernel_size = 3
-channels = [80, 55, 35, 25, 15]
-dilations = [1, 2, 4, 8, 16]
+channels = [64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64]
+dilations = [1, 2, 4, 8, 16, 16, 16, 16, 16, 16, 16, 16, 32, 32, 32, 32]
 
 [hypers.tcn2]
-kernel_size = 3
-channels = [16, 16, 16, 16, 16, 16, 16, 16]
-dilations = [1, 2, 4, 8, 16, 32, 64, 128]
+kernel_size = 5
+channels = [32, 32, 32, 32]
+dilations = [1, 4, 16, 64]
