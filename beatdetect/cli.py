@@ -50,9 +50,9 @@ def prepare_data(config: str = "configs/dev.toml"):
 
 
 @app.command()
-def training(config: str = "configs/dev.toml"):
+def train(config: str = "configs/dev.toml"):
     """Run training with given config."""
-    from .model import train
+    from .scripts import train
 
     cfg = config_loader.load_config(config)
     train.main(cfg)
@@ -62,7 +62,7 @@ def training(config: str = "configs/dev.toml"):
 def run_all(config: str = "configs/dev.toml"):
     """Run the full pipeline end-to-end."""
     prepare_data(config)
-    training(config)
+    train(config)
 
 
 if __name__ == "__main__":
