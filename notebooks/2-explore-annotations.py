@@ -6,22 +6,18 @@ app = marimo.App(width="medium")
 
 @app.cell
 def _():
-    import json
-    import pathlib
-    import re
     from collections import Counter
 
     import marimo as mo
+    import numpy as np
     import plotly.express as px
+    import plotly.graph_objects as go
     import polars as pl
+    import torch
+    from plotly.subplots import make_subplots
 
     from beatdetect.config_loader import load_config
-    from beatdetect.utils.paths import iterate_beat_files, PathResolver
-
-    import torch
-    import plotly.graph_objects as go
-    from plotly.subplots import make_subplots
-    import numpy as np
+    from beatdetect.utils.paths import PathResolver, iterate_beat_files
     return (
         Counter,
         PathResolver,

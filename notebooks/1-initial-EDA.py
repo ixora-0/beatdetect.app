@@ -12,7 +12,6 @@ def _():
     import plotly.express as px
     import polars as pl
     import polars.selectors as cs
-    import requests
     import torch
     import torchaudio
 

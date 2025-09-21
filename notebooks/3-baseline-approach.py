@@ -6,8 +6,6 @@ app = marimo.App(width="full")
 
 @app.cell
 def _():
-    from pprint import pprint
-
     import librosa
     import marimo as mo
     import mir_eval
@@ -15,7 +13,6 @@ def _():
     import plotly.express as px
     import plotly.graph_objects as go
     import polars as pl
-    import polars.selectors as cs
     import torch
     import torchaudio
     from plotly.subplots import make_subplots
@@ -86,9 +83,7 @@ def _(PathResolver, config, np, torch):
 
 @app.cell(hide_code=True)
 def _(mo):
-    mo.md(
-        r"""Slice spectrogram into a smaller section for clearer visualization."""
-    )
+    mo.md(r"""Slice spectrogram into a smaller section for clearer visualization.""")
     return
 
 
@@ -142,9 +137,7 @@ def _(fn, paths, pl):
 
 @app.cell(hide_code=True)
 def _(mo):
-    mo.md(
-        r"""Ignoring downbeats for our purpose. Also trimming it down to our audio slice."""
-    )
+    mo.md(r"""Ignoring downbeats for our purpose. Also trimming it down to our audio slice.""")
     return
 
 
@@ -363,9 +356,7 @@ def _(config, go, inferred_tempo, librosa, spectral_flux, xs):
 
 @app.cell(hide_code=True)
 def _(mo):
-    mo.md(
-        r"""Getting the autocorrelation of the spectral flux. Peaks in the first plot are time lags where the spectral flux pattern most closely matches itself, which corresponding to beat intervals. The second plot is on a BPM (frequency) scale instead of lag time (period). Peaks on the this plot is usually multiples and factors of the actual tempo. Estimated tempo is inferred from where the peaks are and also what are the most common BPM that we see in music (usually between 30 - 300 BPM)."""
-    )
+    mo.md(r"""Getting the autocorrelation of the spectral flux. Peaks in the first plot are time lags where the spectral flux pattern most closely matches itself, which corresponding to beat intervals. The second plot is on a BPM (frequency) scale instead of lag time (period). Peaks on the this plot is usually multiples and factors of the actual tempo. Estimated tempo is inferred from where the peaks are and also what are the most common BPM that we see in music (usually between 30 - 300 BPM).""")
     return
 
 
@@ -411,7 +402,7 @@ def _(
     for y, name, color in zip(
         [ac_global, ac_local],
         ["Global autocorrelation", "Local autocorrelation"],
-        _colors[:2],
+        _colors[:2], strict=False,
     ):
         _fig.add_trace(
             go.Scatter(
@@ -429,7 +420,7 @@ def _(
     for y, name, color in zip(
         [ac_global[1:], ac_local[1:]],
         ["Global autocorrelation", "Local autocorrelation"],
-        _colors[:2],
+        _colors[:2], strict=False,
     ):
         _fig.add_trace(
             go.Scatter(

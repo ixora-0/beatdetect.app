@@ -6,15 +6,9 @@ app = marimo.App(width="medium")
 
 @app.cell
 def _():
-    import random
-
     import marimo as mo
-    import torch
-    import torch.nn as nn
-    import torch.nn.functional as F
     import torchinfo
     import torchview
-    from pytorch_tcn import TCN
 
     from beatdetect.config_loader import load_config
     from beatdetect.model import BeatDetectTCN
@@ -39,7 +33,6 @@ def _(mo):
     - Stage 2 (TCN2): A 4-layer TCN takes the TCN1 output concatenated with the predicted beats to detect downbeats. Uses more aggressive dilations over a 6.82s receptive field to identify measure-level structure.
 
     The architecture follows the natural musical hierarchy where individual beats inform downbeat detection. The first network learns onset detection from low-level audio features, the second use both spectral representations and beat context to identify downbeats that mark musical measures.
-
     """
     )
     return
