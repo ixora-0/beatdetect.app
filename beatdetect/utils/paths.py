@@ -22,12 +22,8 @@ class PathResolver:
         return self.paths.data.raw.spectrograms / self.dataset / f"{self.dataset}.npz"
 
     @property
-    def encoded_beats_dir(self) -> Path:
-        return self.paths.data.processed.encoded_beats / self.dataset / "beats"
-
-    @property
-    def encoded_downbeats_dir(self) -> Path:
-        return self.paths.data.processed.encoded_beats / self.dataset / "downbeats"
+    def encoded_annotations_dir(self) -> Path:
+        return self.paths.data.processed.annotations / self.dataset
 
     @property
     def spectral_flux_dir(self) -> Path:

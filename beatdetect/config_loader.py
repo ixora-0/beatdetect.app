@@ -16,7 +16,7 @@ class InterimPaths(BaseModel):
 
 class ProcessedPaths(BaseModel):
     splits_info: Path
-    encoded_beats: Path
+    annotations: Path
     spectral_flux: Path
 
 

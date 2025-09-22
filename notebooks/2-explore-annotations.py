@@ -115,8 +115,9 @@ def _(mo):
 def _(PathResolver, config, torch):
     paths = PathResolver(config, "tapcorrect")
     _sample = "001_youtube_fV4DiAyExN0.pt"
-    beats = torch.load(paths.encoded_beats_dir / _sample).numpy()
-    downbeats = torch.load(paths.encoded_downbeats_dir / _sample).numpy()
+    annotations = torch.load(paths.encoded_annotations_dir / _sample).numpy()
+    beats = annotations[0, :]
+    downbeats = annotations[1, :]
 
     num_frames = beats.shape[0]
     num_frames
@@ -184,12 +185,10 @@ def _(PathResolver, config, torch):
 
     for dataset in config.downloads.datasets:
         _paths = PathResolver(config, dataset)
-        for _beats_file in _paths.encoded_beats_dir.glob("*.pt"):
-            _beats = torch.load(_beats_file).numpy()
-            ratios["beats"].append(_beats.shape[0] / sum(_beats))
-        for _downbeats_file in _paths.encoded_downbeats_dir.glob("*.pt"):
-            _downbeats = torch.load(_downbeats_file).numpy()
-            ratios["downbeats"].append(_downbeats.shape[0] / sum(_downbeats))
+        for _beats_file in _paths.encoded_annotations_dir.glob("*.pt"):
+            _annotations = torch.load(_beats_file).numpy()
+            ratios["beats"].append(_annotations.shape[0] / sum(_annotations[0, :]))
+            ratios["downbeats"].append(_annotations.shape[0] / sum(_annotations[1, :]))
     return (ratios,)
 
 

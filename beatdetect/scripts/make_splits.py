@@ -30,23 +30,13 @@ def main(config: Config):
 
     # List of [dataset, name] per data point
     all_samples = []
-
-    for dataset in config.downloads.datasets:
-        paths = PathResolver(config, dataset)
-
-        # load available track names for this dataset
-        # using encoded beats files to determine names
-        names = sorted(
-            [p.name.removesuffix(".pt") for p in paths.encoded_beats_dir.glob("*.pt")]
+    all_samples = [
+        [dataset, p.name.removesuffix(".pt")]
+        for dataset in config.downloads.datasets
+        for p in sorted(
+            PathResolver(config, dataset).encoded_annotations_dir.glob("*.pt")
         )
-
-        for name in names:
-            beats_file = paths.encoded_beats_dir / f"{name}.pt"
-            downbeats_file = paths.encoded_downbeats_dir / f"{name}.pt"
-            if beats_file.exists() and downbeats_file.exists():
-                all_samples.append([dataset, name])
-            else:
-                print(f"Warning: Missing annotations for {dataset}/{name}")
+    ]
 
     # Calculate split sizes
     total_samples = len(all_samples)

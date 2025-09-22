@@ -61,10 +61,6 @@ class BeatDataset(Dataset):
         flux = torch.load(self.spectral_flux_path / dataset / f"{name}.pt")
 
         # Load beats and downbeats
-        beats = torch.load(paths.encoded_beats_dir / f"{name}.pt")
-        downbeats = torch.load(paths.encoded_downbeats_dir / f"{name}.pt")
-
-        # Stack beats and downbeats: [0, :] = beats, [1, :] = downbeats
-        target = torch.stack([beats, downbeats], dim=0)
+        target = torch.load(paths.encoded_annotations_dir / f"{name}.pt")
 
         return mel, flux, target

@@ -27,10 +27,6 @@ def main(config: Config, specified_dataset: str | None = None):
         paths = PathResolver(config, dataset)
         annotations_dir = paths.resolve_annotations_dir(cleaned=True)
 
-        paths.encoded_beats_dir.mkdir(parents=True, exist_ok=True)
-        if has_downbeats:
-            paths.encoded_downbeats_dir.mkdir(parents=True, exist_ok=True)
-
         spectrograms = np.load(paths.spectrograms_file)
 
         for path in annotations_dir.glob("*.beats"):
@@ -49,7 +45,8 @@ def main(config: Config, specified_dataset: str | None = None):
                 continue
 
             beat_times = beat_df[:, 0].to_numpy()
-            beat_indices = beat_df[:, 1].to_numpy().astype(int)
+            if has_downbeats:
+                beat_indices = beat_df[:, 1].to_numpy().astype(int)
 
             frame_indices = np.round(beat_times * config.spectrogram.fps).astype(int)
             frame_indices = np.clip(frame_indices, 0, num_frames - 1)
@@ -59,9 +56,9 @@ def main(config: Config, specified_dataset: str | None = None):
             onehot_beats[frame_indices] = 1
 
             # Downbeats: mark only those with beat index == 1
+            onehot_downbeats = torch.zeros(num_frames)
             if has_downbeats:
                 downbeat_mask = beat_indices == 1
-                onehot_downbeats = torch.zeros(num_frames)
                 onehot_downbeats[frame_indices[downbeat_mask]] = 1
 
             # smooth using gaussian window
@@ -82,17 +79,21 @@ def main(config: Config, specified_dataset: str | None = None):
                 return smoothed / center_weight
 
             smoothed_beats = smooth(onehot_beats)
-            torch.save(smoothed_beats, paths.encoded_beats_dir / f"{name}.pt")
+            smoothed_downbeats = smooth(onehot_downbeats)
 
-            if has_downbeats:
-                smoothed_downbeats = smooth(onehot_downbeats)
-                torch.save(
-                    smoothed_downbeats, paths.encoded_downbeats_dir / f"{name}.pt"
-                )
+            # Combine into [2, T] tensor
+            combined_annotations = torch.stack(
+                [smoothed_beats, smoothed_downbeats], dim=0
+            )
+
+            # Save combined tensor
+            torch.save(
+                combined_annotations, paths.encoded_annotations_dir / f"{name}.pt"
+            )
+
             count += 1
 
-    skipped_path = config.paths.data.processed.encoded_beats / "skipped.json"
-    skipped_path.parent.mkdir(parents=True, exist_ok=True)
+    skipped_path = config.paths.data.processed.annotations / "skipped.json"
     with skipped_path.open("w") as f:
         json.dump(skipped, f, indent=2)
 
@@ -106,7 +107,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description=textwrap.dedent(f"""
             One hot-encode beat annotations, smoothen it,
-            and save them to {config.paths.data.processed.encoded_beats}.
+            and save them to {config.paths.data.processed.annotations}.
         """)
     )
     parser.add_argument(
