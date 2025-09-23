@@ -8,7 +8,7 @@ def collate_fn(batch):
     Each item in 'batch' is a tuple: (mel, flux, target)
     target has shape (2, T): [beat_row, downbeat_row].
     """
-    mels, fluxes, targets = zip(*batch, strict=False)  # Unzip the batch
+    ids, mels, fluxes, targets = zip(*batch, strict=False)  # Unzip the batch
 
     # Determine the maximum sequence length in the batch
     max_len = max(mel.shape[1] for mel in mels)
@@ -41,4 +41,4 @@ def collate_fn(batch):
         dim=0,
     )
 
-    return padded_mels, padded_fluxes, padded_targets, masks
+    return ids, padded_mels, padded_fluxes, padded_targets, masks

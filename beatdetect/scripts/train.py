@@ -46,7 +46,7 @@ def main(config: Config):
             model.eval()
 
         total_loss = 0.0
-        for mels, fluxes, targets, masks in tqdm(
+        for _id, mels, fluxes, targets, masks in tqdm(
             loader, desc="Train" if training else "Val", unit="batch"
         ):
             mels, fluxes, targets, masks = (

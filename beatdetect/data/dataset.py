@@ -66,4 +66,4 @@ class BeatDataset(Dataset):
         # Load beats and downbeats
         target = torch.load(paths.encoded_annotations_dir / f"{name}.pt")
 
-        return mel, flux, target
+        return f"{dataset}/{name}", mel, flux, target
