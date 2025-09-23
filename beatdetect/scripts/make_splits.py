@@ -1,7 +1,10 @@
 import csv
 import json
 import random
+from collections import defaultdict
 from pathlib import Path
+
+import numpy as np
 
 from ..config_loader import Config, load_config
 from ..utils.paths import PathResolver
@@ -30,13 +33,28 @@ def main(config: Config):
 
     # List of [dataset, name] per data point
     all_samples = []
-    all_samples = [
-        [dataset, p.name.removesuffix(".pt")]
-        for dataset in config.downloads.datasets
-        for p in sorted(
-            PathResolver(config, dataset).encoded_annotations_dir.glob("*.pt")
-        )
-    ]
+    skipped_samples = defaultdict(list)
+    for dataset in config.downloads.datasets:
+        paths = PathResolver(config, dataset)
+        spectrograms = np.load(paths.spectrograms_file)
+
+        for p in sorted(paths.encoded_annotations_dir.glob("*.pt")):
+            name = p.name.removesuffix(".pt")
+
+            spectrogram = spectrograms.get(f"{name}/track")
+
+            if spectrogram is not None and spectrogram.shape[0] <= 50000:
+                all_samples.append([dataset, name])
+            else:
+                print(f"Skipping {dataset}/{name} (too long).")
+                skipped_samples[dataset].append(name)
+
+    # Save skipped samples to JSON file
+    skipped_dict = dict(skipped_samples)
+    skipped_file_path = config.paths.data.processed.annotations / "skipped.json"
+    skipped_file_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(skipped_file_path, "w") as f:
+        json.dump(skipped_dict, f, indent=2)
 
     # Calculate split sizes
     total_samples = len(all_samples)
