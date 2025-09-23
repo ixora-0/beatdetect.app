@@ -45,6 +45,11 @@ class BeatDataset(Dataset):
 
         print(f"Loaded {split} split: {len(self.samples)} samples")
 
+        self.spec_archives = {}
+        for dataset in config.downloads.datasets:
+            paths = PathResolver(self.config, dataset)
+            self.spec_archives[dataset] = np.load(paths.spectrograms_file)
+
     def __len__(self):
         return len(self.samples)
 
@@ -53,11 +58,9 @@ class BeatDataset(Dataset):
         dataset, name = self.samples[idx]
         paths = PathResolver(self.config, dataset)
 
-        # Load spectrogram on-demand to avoid memory issues with large NPZ files
-        with np.load(paths.spectrograms_file) as spec_archive:
-            mel = torch.from_numpy(spec_archive.get(f"{name}/track").T).to(
-                torch.float32
-            )
+        mel = torch.from_numpy(self.spec_archives[dataset].get(f"{name}/track").T).to(
+            torch.float32
+        )
         flux = torch.load(self.spectral_flux_path / dataset / f"{name}.pt")
 
         # Load beats and downbeats
