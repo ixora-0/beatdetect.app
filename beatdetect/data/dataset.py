@@ -1,4 +1,5 @@
 import csv
+import random
 
 import numpy as np
 import torch
@@ -14,6 +15,8 @@ class BeatDataset(Dataset):
         config: Config,
         split: str,
         datasets: list[str] | None = None,
+        use_pitch_shift: bool = True,
+        pitch_shift_prob: float = 0.5,
     ):
         """
         Initialize BeatDataset.
@@ -22,13 +25,18 @@ class BeatDataset(Dataset):
             config: Configuration object
             datasets: List of datasets to include
             split: Split to load ('train', 'val', 'test').
+            use_pitch_shift: Whether to use pitch shift augmentation
+            pitch_shift_prob: Probability of using pitch shifted version
         """
         self.config = config
+        self.rng = random.Random(config.random_seed)
         self.datasets = datasets if datasets is not None else config.downloads.datasets
         self.spectrograms_path = config.paths.data.raw.spectrograms
         self.spectral_flux_path = config.paths.data.processed.spectral_flux
 
         self.splits_file = config.paths.data.processed.splits_info
+        self.use_pitch_shift = use_pitch_shift and split == "train"  # Only for training
+        self.pitch_shift_prob = pitch_shift_prob
         if not self.splits_file.exists():
             raise FileNotFoundError(
                 f"Splits file not found: {self.splits_file}. "
@@ -58,10 +66,21 @@ class BeatDataset(Dataset):
         dataset, name = self.samples[idx]
         paths = PathResolver(self.config, dataset)
 
-        mel = torch.from_numpy(self.spec_archives[dataset].get(f"{name}/track").T).to(
-            torch.float32
-        )
         flux = torch.load(self.spectral_flux_path / dataset / f"{name}.pt")
+        # Choose pitch shift variant
+        if (
+            self.use_pitch_shift
+            and self.rng.random() < self.pitch_shift_prob
+            and dataset != "gtzan"
+        ):
+            shift = self.rng.randint(-5, 6)
+            if shift == 0:
+                key = f"{name}/track"
+            else:
+                key = f"{name}/track_ps{shift}"
+        else:
+            key = f"{name}/track"
+        mel = torch.from_numpy(self.spec_archives[dataset].get(key).T).to(torch.float32)
 
         # Load beats and downbeats
         target = torch.load(paths.encoded_annotations_dir / f"{name}.pt")
