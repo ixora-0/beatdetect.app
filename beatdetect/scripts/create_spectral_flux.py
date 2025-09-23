@@ -28,6 +28,9 @@ def main(config: Config, specified_dataset=None):
                 continue
             print(f"\033[KProcessing file {file_name}", end="\r")
             name = file_name.removesuffix("/track")
+            output_path = spectral_flux_dir / f"{name}.pt"
+            if output_path.exists():
+                continue
 
             melspect = torch.from_numpy(spectrograms[file_name]).to(torch.float32)
             # ibrosa.onset.onset_strength requires log-power spectrogram
@@ -41,9 +44,7 @@ def main(config: Config, specified_dataset=None):
             )
             spectral_flux = np.clip(spectral_flux, None, 4)  # clip values above 4
 
-            torch.save(
-                torch.from_numpy(spectral_flux), spectral_flux_dir / f"{name}.pt"
-            )
+            torch.save(torch.from_numpy(spectral_flux), output_path)
             count += 1
 
     print()

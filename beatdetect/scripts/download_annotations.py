@@ -49,9 +49,12 @@ def main(config: Config):
 
     # downloading
     output_file = config.paths.downloads / file_name
-    print(f"Fetching from {url} into {output_file}")
-    urllib.request.urlretrieve(url, output_file, reporthook=TqdmHook())
-    print("Finished downloading.")
+    if output_file.exists():
+        print(f"File {output_file} exists, skipping download")
+    else:
+        print(f"Fetching from {url} into {output_file}")
+        urllib.request.urlretrieve(url, output_file, reporthook=TqdmHook())
+        print("Finished downloading.")
 
     # extracting
     out_dir = config.paths.data.raw.annotations

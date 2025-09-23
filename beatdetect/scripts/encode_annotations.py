@@ -25,13 +25,17 @@ def main(config: Config, specified_dataset: str | None = None):
     for dataset in datasets:
         has_downbeats = dataset_info.get(dataset, {}).get("has_downbeats", False)
         paths = PathResolver(config, dataset)
+        paths.encoded_annotations_dir.mkdir(parents=True, exist_ok=True)
         annotations_dir = paths.resolve_annotations_dir(cleaned=True)
 
         spectrograms = np.load(paths.spectrograms_file)
 
         for path in annotations_dir.glob("*.beats"):
-            print(f"\033[KProcessing file {path}", end="\r")
             name = path.stem
+            output_path = paths.encoded_annotations_dir / f"{name}.pt"
+            if output_path.exists():
+                continue
+            print(f"\033[KProcessing file {path}", end="\r")
             spectrogram = spectrograms.get(f"{name}/track")
             num_frames = spectrogram.shape[0]
 
@@ -87,9 +91,7 @@ def main(config: Config, specified_dataset: str | None = None):
             )
 
             # Save combined tensor
-            torch.save(
-                combined_annotations, paths.encoded_annotations_dir / f"{name}.pt"
-            )
+            torch.save(combined_annotations, output_path)
 
             count += 1
 
