@@ -63,15 +63,8 @@ val_ratio = 0.1
 batch_size = 4
 
 [hypers]
-learning_rate = 1e-5
-dropout = 0.1
-
-[hypers.tcn1]
+learning_rate = 1e-4
+dropout = 0.01
 kernel_size = 3
-channels = [64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64]
-dilations = [1, 2, 4, 8, 16, 16, 16, 16, 16, 16, 16, 16, 32, 32, 32, 32]
-
-[hypers.tcn2]
-kernel_size = 5
-channels = [32, 32, 32, 32]
-dilations = [1, 4, 16, 64]
+channels = [64, 64, 64, 64, 64, 64, 64, 64]
+dilations = [1, 2, 4, 8, 16, 32, 64, 128]

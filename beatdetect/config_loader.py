@@ -89,17 +89,12 @@ class TrainingConfig(BaseModel):
         return 1.0 - self.train_ratio - self.val_ratio
 
 
-class TCNConfig(BaseModel):
-    kernel_size: int
-    channels: list[int]
-    dilations: list[int]
-
-
 class HypersConfig(BaseModel):
     learning_rate: float
     dropout: float
-    tcn1: TCNConfig
-    tcn2: TCNConfig
+    kernel_size: int
+    channels: list[int]
+    dilations: list[int]
 
 
 class Config(BaseModel):

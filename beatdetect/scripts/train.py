@@ -29,8 +29,8 @@ def main(config: Config):
     )
 
     # --- model ---
-    model = BeatDetectTCN(config.spectrogram.n_mels).to(device)
-    optimizer = torch.optim.Adam(model.parameters(), lr=config.hypers.learning_rate)
+    model = BeatDetectTCN(config).to(device)
+    optimizer = torch.optim.AdamW(model.parameters(), lr=config.hypers.learning_rate)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
         optimizer, mode="min", factor=1 / 5, patience=5
     )

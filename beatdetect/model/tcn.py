@@ -10,37 +10,21 @@ class BeatDetectTCN(nn.Module):
         super().__init__()
         hypers = config.hypers
 
-        self.tcn1 = TCN(
+        self.tcn = TCN(
             num_inputs=config.spectrogram.n_mels + 1,  # mel spect + spectral flux
-            num_channels=hypers.tcn1.channels,
-            kernel_size=hypers.tcn1.kernel_size,
-            dilations=hypers.tcn1.dilations,
+            num_channels=hypers.channels,
+            kernel_size=hypers.kernel_size,
+            dilations=hypers.dilations,
             dropout=hypers.dropout,
             causal=False,
-            use_norm="weight_norm",
+            use_norm="layer_norm",
             activation="relu",
             use_skip_connections=True,
+            use_gate=True,
         )
 
-        self.beat_head = nn.Conv1d(
-            hypers.tcn1.channels[-1], 1, kernel_size=1, bias=True
-        )
-
-        self.tcn2 = TCN(
-            num_inputs=hypers.tcn1.channels[-1] + 1,  # out of tcn1 + beats
-            num_channels=hypers.tcn2.channels,
-            kernel_size=hypers.tcn2.kernel_size,
-            dilations=hypers.tcn2.dilations,
-            dropout=hypers.dropout,
-            causal=False,
-            use_norm="weight_norm",
-            activation="relu",
-            use_skip_connections=True,
-        )
-
-        self.downbeat_head = nn.Conv1d(
-            hypers.tcn2.channels[-1], 1, kernel_size=1, bias=True
-        )
+        # two output channels, 0 -> beat, 1 -> downbeat
+        self.logit_head = nn.Conv1d(hypers.channels[-1], 2, kernel_size=1, bias=True)
 
     def forward(self, mel, flux, return_logits=False):
         """
@@ -49,14 +33,8 @@ class BeatDetectTCN(nn.Module):
         """
         flux = flux.unsqueeze(1)  # → (B, 1, T)
         x = torch.cat([mel, flux], dim=1)  # (B, 129, T)
-        x = self.tcn1(x)  # (B, 32, T)
-        beat_logits = self.beat_head(x)  # (B, 1, T)
-
-        x = torch.cat([x, beat_logits], dim=1)  # (B, 33, T)
-        x = self.tcn2(x)  # → (B, 32, T)
-        downbeat_logits = self.downbeat_head(x)  # (B, 1, T)
-
-        logits = torch.cat([beat_logits, downbeat_logits], dim=1)  # (B, 2, T)
+        x = self.tcn(x)  # (B, 64, T)
+        logits = self.logit_head(x)  # (B, 2, T)
 
         if return_logits:
             return logits
