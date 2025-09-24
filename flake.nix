@@ -29,7 +29,7 @@
         inherit system;
         config.allowUnfree = true;  # for cuda packages
       };
-      python = pkgs.python313;
+      python = pkgs.python311;
       projectName = "beatdetect";  # matches [project.name] in pyproject.toml
 
       # Load Project Workspace (parses pyproject.toml, uv.lock)

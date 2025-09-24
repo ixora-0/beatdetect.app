@@ -3,7 +3,7 @@ name = "beatdetect"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
-requires-python = ">=3.13"
+requires-python = ">=3.11"
 dependencies = [
   "librosa>=0.11.0",
   "mir-eval>=0.8.2",
@@ -15,6 +15,7 @@ dependencies = [
   "pypdl>=1.5.6",
   "pytorch-tcn>=1.2.3",
   "scipy>=1.16.2",
+  "tensorboard>=2.20.0",
   "torch==2.6.0",
   "torchaudio==2.6.0",
   "torchinfo>=1.8.0",
