@@ -10,8 +10,8 @@ wheels/
 .venv
 .direnv
 
-# No data version control
 /data/
+models/
 
 # pypdl logs
 pypdl.log

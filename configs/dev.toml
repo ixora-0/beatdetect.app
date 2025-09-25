@@ -4,19 +4,19 @@ random_seed = 0
 [downloads]
 rc_api_url = "http://localhost:5572"
 datasets = [
-  "asap",
-  # "ballroom",
-  # "beatles",
-  # "candombe",
-  # "filosax",
-  # "groove_midi",
+  # "asap",
+  "ballroom",
+  "beatles",
+  "candombe",
+  "filosax",
+  "groove_midi",
   "gtzan",
-  # "guitarset",
-  # "hainsworth",
-  # "harmonix",
-  # "hjdb",
-  # "jaah",
-  # "rwc",
+  "guitarset",
+  "hainsworth",
+  "harmonix",
+  "hjdb",
+  "jaah",
+  "rwc",
   # "simac",
   # "smc",
   "tapcorrect",
@@ -60,10 +60,10 @@ hop_length = 441
 train_ratio = 0.8
 val_ratio = 0.1
 # test_ratio = 0.1
-batch_size = 4
+batch_size = 8
 
 [hypers]
-learning_rate = 1e-4
+learning_rate = 1e-3
 dropout = 0.01
 kernel_size = 3
 channels = [64, 64, 64, 64, 64, 64, 64, 64]
