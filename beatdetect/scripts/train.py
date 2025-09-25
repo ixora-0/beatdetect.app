@@ -18,10 +18,23 @@ def main(config: Config):
     log_dir = config.paths.models / f"tensorboard_logs/run_{timestamp}"
     writer = SummaryWriter(log_dir=str(log_dir))
 
+    # --- Gradient accumulation setup ---
+    effective_batch_size = config.training.batch_size
+    actual_batch_size = min(config.training.batch_size, config.training.max_batch_size)
+    accum_iter = effective_batch_size // actual_batch_size
+    print(f"Effective batch size: {effective_batch_size}")
+    print(f"Actual batch size: {actual_batch_size}")
+    print(f"Gradient accumulation steps: {accum_iter}")
+
     # Log hyperparameters
     hparams = {
         "learning_rate": config.hypers.learning_rate,
-        "batch_size": config.training.batch_size,
+        "dropout": config.hypers.dropout,
+        "kernel_size": config.hypers.kernel_size,
+        "channels": str(config.hypers.channels),
+        "dilations": str(config.hypers.dilations),
+        "effective_batch_size": effective_batch_size,
+        "actual_batch_size": actual_batch_size,
         "random_seed": config.random_seed,
     }
     writer.add_hparams(hparams, {})
@@ -31,15 +44,16 @@ def main(config: Config):
     train_dataset = BeatDataset(config, split="train")
     val_dataset = BeatDataset(config, split="val")
 
+    # Use actual_batch_size for DataLoader
     train_loader = torch.utils.data.DataLoader(
         train_dataset,
-        batch_size=config.training.batch_size,
+        batch_size=actual_batch_size,
         shuffle=True,
         collate_fn=collate_fn,
     )
     val_loader = torch.utils.data.DataLoader(
         val_dataset,
-        batch_size=config.training.batch_size,
+        batch_size=actual_batch_size,
         shuffle=False,
         collate_fn=collate_fn,
     )
@@ -76,28 +90,30 @@ def main(config: Config):
                 masks.to(device),
             )
 
-            if training:
-                optimizer.zero_grad()
+            with torch.set_grad_enabled(training):
+                logits = model(mels, fluxes, return_logits=True)  # (B, 2, T)
 
-            logits = model(mels, fluxes, return_logits=True)  # (B, 2, T)
-            # ensure mask shape matches
-            if masks.dim() == 2:  # (B, T)
-                masks_expanded = masks.unsqueeze(1).expand_as(logits)
-            else:
-                masks_expanded = masks
+                # make mask shape match
+                if masks.dim() == 2:  # (B, T)
+                    masks_expanded = masks.unsqueeze(1).expand_as(logits)
+                else:
+                    masks_expanded = masks
+                loss = masked_weighted_bce_logits(logits, targets, masks_expanded)
 
-            loss = masked_weighted_bce_logits(logits, targets, masks_expanded)
+                if training:
+                    # Normalize loss for gradient accumulation
+                    loss = loss / accum_iter
+                    loss.backward()
 
-            if training:
-                loss.backward()
-                # torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
-                optimizer.step()
+                    # Update weights when accumulated enough gradients or at the end
+                    if ((batch_idx + 1) % accum_iter == 0) or (
+                        batch_idx + 1 == len(loader)
+                    ):
+                        # torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
+                        optimizer.step()
+                        optimizer.zero_grad()
 
-                # Log batch-level training loss
-                step = (epoch - 1) * len(loader) + batch_idx
-                writer.add_scalar("Loss/Train_Batch", loss.item(), step)
-
-            total_loss += loss.item() * mels.size(0)
+            total_loss += loss.item() * mels.size(0) * (accum_iter if training else 1)
 
         return total_loss / len(loader.dataset)
 
@@ -143,15 +159,7 @@ def main(config: Config):
             break
 
     writer.add_hparams(
-        {
-            "learning_rate": config.hypers.learning_rate,
-            "dropout": config.hypers.dropout,
-            "kernel_size": config.hypers.kernel_size,
-            "channels": str(config.hypers.channels),
-            "dilations": str(config.hypers.dilations),
-            "batch_size": config.training.batch_size,
-            "random_seed": config.random_seed,
-        },
+        hparams,
         {
             "final_train_loss": train_losses[-1],
             "best_val_loss": best_val_loss,

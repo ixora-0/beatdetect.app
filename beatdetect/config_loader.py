@@ -83,6 +83,7 @@ class TrainingConfig(BaseModel):
     train_ratio: float
     val_ratio: float
     batch_size: int
+    max_batch_size: int
 
     @property
     def test_ratio(self) -> float:

@@ -60,7 +60,8 @@ hop_length = 441
 train_ratio = 0.8
 val_ratio = 0.1
 # test_ratio = 0.1
-batch_size = 8
+batch_size = 16
+max_batch_size = 4
 
 [hypers]
 learning_rate = 1e-3
