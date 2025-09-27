@@ -4,13 +4,13 @@ import torch.nn.functional as F
 
 def masked_weighted_bce_logits(logits, targets, mask, pos_weight=(10.0, 40.0)):
     """
-    logits:    (B, 2, T)
-    targets:   (B, 2, T), {0,1}
-    mask:      (B, T), bool
-    pos_weight: float or (2,) tensor — one weight per channel
+    logits:   (B, 2, T)
+    targets:  (B, 2, T)
+    mask:     (B, T)
+    pos_weight: float or (2,) for beat and downbeat channels
     """
-    # BCEWithLogitsLoss per-element → (B, 2, T)
-    if isinstance(pos_weight, (float, int)):
+
+    if isinstance(pos_weight, (float, float)):
         pos_weight = torch.tensor([pos_weight, pos_weight], device=logits.device)
     else:
         pos_weight = torch.as_tensor(pos_weight, device=logits.device)
@@ -21,8 +21,12 @@ def masked_weighted_bce_logits(logits, targets, mask, pos_weight=(10.0, 40.0)):
         reduction="none",
     )
 
-    # Mask out padding
-    masked_bce = bce * mask.unsqueeze(1).float()
+    # Build weight mask: (B, 2, T)
+    # Reduce beat weight where downbeat_target > 0
+    weight = torch.ones_like(targets)
+    weight[:, 0, :] = 1.0 - targets[:, 1, :]
 
-    # Mean over valid frames
+    # Apply mask
+    masked_bce = bce * weight * mask.unsqueeze(1).float()
+
     return masked_bce.sum() / mask.float().sum()

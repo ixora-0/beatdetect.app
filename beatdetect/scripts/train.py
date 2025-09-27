@@ -93,12 +93,7 @@ def main(config: Config):
             with torch.set_grad_enabled(training):
                 logits = model(mels, fluxes, return_logits=True)  # (B, 2, T)
 
-                # make mask shape match
-                if masks.dim() == 2:  # (B, T)
-                    masks_expanded = masks.unsqueeze(1).expand_as(logits)
-                else:
-                    masks_expanded = masks
-                loss = masked_weighted_bce_logits(logits, targets, masks_expanded)
+                loss = masked_weighted_bce_logits(logits, targets, masks)
 
                 if training:
                     # Normalize loss for gradient accumulation
