@@ -43,6 +43,7 @@ spectrograms = "data/raw/spectrogram"
 annotations = "data/interim/annotations"
 
 [paths.data.processed]
+datasets_info = "data/interim/annotations/info.json"
 splits_info = "data/processed/splits.csv"
 annotations = "data/processed/encoded-annotations"
 spectral_flux = "data/processed/spectral-flux"

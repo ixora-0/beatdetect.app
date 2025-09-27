@@ -18,6 +18,7 @@ class ProcessedPaths(BaseModel):
     splits_info: Path
     annotations: Path
     spectral_flux: Path
+    datasets_info: Path
 
 
 class DataPaths(BaseModel):

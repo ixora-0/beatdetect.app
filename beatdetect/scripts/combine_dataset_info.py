@@ -12,9 +12,8 @@ def main(config: Config):
         with open(info_file_path) as f:
             combined_info[dataset] = json.load(f)
 
-    out = config.paths.data.interim.annotations
-    out.mkdir(parents=True, exist_ok=True)
-    combined_info_path = out / "info.json"
+    combined_info_path = config.paths.data.processed.datasets_info
+    combined_info_path.parent.mkdir(parents=True, exist_ok=True)
     with open(combined_info_path, "w") as f:
         json.dump(combined_info, f, indent=2)
 
