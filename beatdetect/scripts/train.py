@@ -80,20 +80,21 @@ def main(config: Config):
             model.eval()
 
         total_loss = 0.0
-        for batch_idx, (_id, mels, fluxes, targets, masks) in enumerate(
+        for batch_idx, (_id, mels, fluxes, targets, has_downbeats, masks) in enumerate(
             tqdm(loader, desc="Train" if training else "Val", unit="batch")
         ):
-            mels, fluxes, targets, masks = (
+            mels, fluxes, targets, has_downbeats, masks = (
                 mels.to(device),
                 fluxes.to(device),
                 targets.to(device),
+                has_downbeats.to(device),
                 masks.to(device),
             )
 
             with torch.set_grad_enabled(training):
                 logits = model(mels, fluxes, return_logits=True)  # (B, 2, T)
 
-                loss = masked_weighted_bce_logits(logits, targets, masks)
+                loss = masked_weighted_bce_logits(logits, targets, has_downbeats, masks)
 
                 if training:
                     # Normalize loss for gradient accumulation

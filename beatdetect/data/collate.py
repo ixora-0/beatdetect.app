@@ -8,7 +8,9 @@ def collate_fn(batch):
     Each item in 'batch' is a tuple: (mel, flux, target)
     target has shape (2, T): [beat_row, downbeat_row].
     """
-    ids, mels, fluxes, targets = zip(*batch, strict=False)  # Unzip the batch
+    ids, mels, fluxes, targets, has_downbeats = zip(
+        *batch, strict=False
+    )  # Unzip the batch
 
     # Determine the maximum sequence length in the batch
     max_len = max(mel.shape[1] for mel in mels)
@@ -27,6 +29,9 @@ def collate_fn(batch):
     ]
     padded_targets = torch.stack(padded_targets)
 
+    # Has downbeats? → (B,)
+    has_downbeats = torch.tensor(has_downbeats)
+
     # Build mask = True where not padded → (B, T_max)
     masks = torch.stack(
         [
@@ -41,4 +46,4 @@ def collate_fn(batch):
         dim=0,
     )
 
-    return ids, padded_mels, padded_fluxes, padded_targets, masks
+    return ids, padded_mels, padded_fluxes, padded_targets, has_downbeats, masks

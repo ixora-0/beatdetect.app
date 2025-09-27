@@ -2,11 +2,14 @@ import torch
 import torch.nn.functional as F
 
 
-def masked_weighted_bce_logits(logits, targets, mask, pos_weight=(10.0, 40.0)):
+def masked_weighted_bce_logits(
+    logits, targets, has_downbeat, mask, pos_weight=(10.0, 40.0)
+):
     """
-    logits:   (B, 2, T)
-    targets:  (B, 2, T)
-    mask:     (B, T)
+    logits:       (B, 2, T)
+    targets:      (B, 2, T)
+    mask:         (B, T)
+    has_downbeat: (B,)
     pos_weight: float or (2,) for beat and downbeat channels
     """
 
@@ -25,6 +28,10 @@ def masked_weighted_bce_logits(logits, targets, mask, pos_weight=(10.0, 40.0)):
     # Reduce beat weight where downbeat_target > 0
     weight = torch.ones_like(targets)
     weight[:, 0, :] = 1.0 - targets[:, 1, :]
+
+    # disable downbeat if missing annotation
+    down_mask = has_downbeat.to(logits.device).view(-1, 1, 1).float()
+    weight[:, 1:2, :] *= down_mask
 
     # Apply mask
     masked_bce = bce * weight * mask.unsqueeze(1).float()

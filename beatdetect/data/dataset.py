@@ -1,4 +1,5 @@
 import csv
+import json
 import random
 
 import numpy as np
@@ -58,6 +59,12 @@ class BeatDataset(Dataset):
             paths = PathResolver(self.config, dataset)
             self.spec_archives[dataset] = np.load(paths.spectrograms_file)
 
+        with config.paths.data.processed.datasets_info.open("r", encoding="utf-8") as f:
+            info = json.load(f)
+        self.has_downbeat = {
+            dataset: info[dataset]["has_downbeats"] for dataset in info.keys()
+        }
+
     def __len__(self):
         return len(self.samples)
 
@@ -85,4 +92,6 @@ class BeatDataset(Dataset):
         # Load beats and downbeats
         target = torch.load(paths.encoded_annotations_dir / f"{name}.pt")
 
-        return f"{dataset}/{name}", mel, flux, target
+        has_downbeat = self.has_downbeat[dataset]
+
+        return f"{dataset}/{name}", mel, flux, target, has_downbeat
