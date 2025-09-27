@@ -10,13 +10,24 @@ from ..model import BeatDetectTCN, create_mock_inputs, masked_weighted_bce_logit
 from ..utils import set_seed
 
 
-def main(config: Config):
+class NullWriter:
+    def __getattr__(self, name):
+        def noop(*args, **kwargs):
+            return None
+
+        return noop
+
+
+def main(config: Config, log: bool = True):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     # --- TensorBoard setup ---
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    log_dir = config.paths.models / f"tensorboard_logs/run_{timestamp}"
-    writer = SummaryWriter(log_dir=str(log_dir))
+    if log:
+        log_dir = config.paths.models / f"tensorboard_logs/run_{timestamp}"
+        writer = SummaryWriter(log_dir=str(log_dir))
+    else:
+        writer = NullWriter()
 
     # --- Gradient accumulation setup ---
     effective_batch_size = config.training.batch_size

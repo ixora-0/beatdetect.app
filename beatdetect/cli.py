@@ -50,12 +50,19 @@ def prepare_data(config: str = "configs/dev.toml"):
 
 
 @app.command()
-def train(config: str = "configs/dev.toml"):
+def train(
+    config: str = "configs/dev.toml",
+    no_log: bool = typer.Option(
+        False,
+        "--no-log",
+        help="Disable logging",
+    ),
+):
     """Run training with given config."""
     from .scripts import train
 
     cfg = config_loader.load_config(config)
-    train.main(cfg)
+    train.main(cfg, log=not no_log)
 
 
 @app.command()
