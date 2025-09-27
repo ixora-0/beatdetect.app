@@ -15,6 +15,7 @@ class BeatDataset(Dataset):
         self,
         config: Config,
         split: str,
+        device: torch.device,
         datasets: list[str] | None = None,
         use_pitch_shift: bool = True,
         pitch_shift_prob: float = 0.5,
@@ -30,6 +31,7 @@ class BeatDataset(Dataset):
             pitch_shift_prob: Probability of using pitch shifted version
         """
         self.config = config
+        self.device = device
         self.rng = random.Random(config.random_seed)
         self.datasets = datasets if datasets is not None else config.downloads.datasets
         self.spectrograms_path = config.paths.data.raw.spectrograms
@@ -73,7 +75,9 @@ class BeatDataset(Dataset):
         dataset, name = self.samples[idx]
         paths = PathResolver(self.config, dataset)
 
-        flux = torch.load(self.spectral_flux_path / dataset / f"{name}.pt")
+        flux = torch.load(
+            self.spectral_flux_path / dataset / f"{name}.pt", map_location=self.device
+        )
         # Choose pitch shift variant
         if (
             self.use_pitch_shift
@@ -87,10 +91,14 @@ class BeatDataset(Dataset):
                 key = f"{name}/track_ps{shift}"
         else:
             key = f"{name}/track"
-        mel = torch.from_numpy(self.spec_archives[dataset].get(key).T).to(torch.float32)
+        mel = torch.from_numpy(self.spec_archives[dataset].get(key).T).to(
+            device=self.device, dtype=torch.float32
+        )
 
         # Load beats and downbeats
-        target = torch.load(paths.encoded_annotations_dir / f"{name}.pt")
+        target = torch.load(
+            paths.encoded_annotations_dir / f"{name}.pt", map_location=self.device
+        )
 
         has_downbeat = self.has_downbeat[dataset]
 

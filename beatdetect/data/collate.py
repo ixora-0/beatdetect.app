@@ -11,6 +11,7 @@ def collate_fn(batch):
     ids, mels, fluxes, targets, has_downbeats = zip(
         *batch, strict=False
     )  # Unzip the batch
+    device = mels[0].device
 
     # Determine the maximum sequence length in the batch
     max_len = max(mel.shape[1] for mel in mels)
@@ -30,15 +31,15 @@ def collate_fn(batch):
     padded_targets = torch.stack(padded_targets)
 
     # Has downbeats? → (B,)
-    has_downbeats = torch.tensor(has_downbeats)
+    has_downbeats = torch.tensor(has_downbeats, dtype=torch.bool, device=device)
 
     # Build mask = True where not padded → (B, T_max)
     masks = torch.stack(
         [
             torch.cat(
                 [
-                    torch.ones(t.shape[1], dtype=torch.bool),  # length T_i
-                    torch.zeros(max_len - t.shape[1], dtype=torch.bool),
+                    torch.ones(t.shape[1], dtype=torch.bool, device=device),
+                    torch.zeros(max_len - t.shape[1], dtype=torch.bool, device=device),
                 ]
             )
             for t in targets

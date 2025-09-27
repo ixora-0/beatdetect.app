@@ -52,8 +52,8 @@ def main(config: Config, log: bool = True):
 
     # --- datasets ---
     set_seed(config.random_seed)
-    train_dataset = BeatDataset(config, split="train")
-    val_dataset = BeatDataset(config, split="val")
+    train_dataset = BeatDataset(config, split="train", device=device)
+    val_dataset = BeatDataset(config, split="val", device=device)
 
     # Use actual_batch_size for DataLoader
     train_loader = torch.utils.data.DataLoader(
@@ -94,14 +94,6 @@ def main(config: Config, log: bool = True):
         for batch_idx, (_id, mels, fluxes, targets, has_downbeats, masks) in enumerate(
             tqdm(loader, desc="Train" if training else "Val", unit="batch")
         ):
-            mels, fluxes, targets, has_downbeats, masks = (
-                mels.to(device),
-                fluxes.to(device),
-                targets.to(device),
-                has_downbeats.to(device),
-                masks.to(device),
-            )
-
             with torch.set_grad_enabled(training):
                 logits = model(mels, fluxes, return_logits=True)  # (B, 2, T)
 
