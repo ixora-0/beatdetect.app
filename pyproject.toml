@@ -58,4 +58,10 @@ select = ["E", "F", "I", "B", "UP"]
 unfixable = ["F401", "F841"]
 
 [dependency-groups]
-dev = ["marimo[lsp]>=0.15.3", "pytest>=8.4.2", "ruff>=0.13.0"]
+dev = [
+    "marimo[lsp]>=0.15.3",
+    "pytest>=8.4.2",
+    "ruff>=0.13.0",
+    "scikit-learn>=1.7.2",
+    "scipy>=1.16.2",
+]
