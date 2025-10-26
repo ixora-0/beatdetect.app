@@ -57,13 +57,14 @@ def main(config: Config, specified_dataset: str | None = None):
 
             # Beats: mark all beat frames
             onehot_beats = torch.zeros(num_frames)
-            onehot_beats[frame_indices] = 1
-
-            # Downbeats: mark only those with beat index == 1
             onehot_downbeats = torch.zeros(num_frames)
+
             if has_downbeats:
                 downbeat_mask = beat_indices == 1
                 onehot_downbeats[frame_indices[downbeat_mask]] = 1
+                onehot_beats[frame_indices[~downbeat_mask]] = 1
+            else:
+                onehot_beats[frame_indices] = 1  # treat all as beats
 
             # smooth using gaussian window
             def smooth(onehot: torch.Tensor) -> torch.Tensor:
@@ -85,13 +86,17 @@ def main(config: Config, specified_dataset: str | None = None):
             smoothed_beats = smooth(onehot_beats)
             smoothed_downbeats = smooth(onehot_downbeats)
 
-            # Combine into [2, T] tensor
-            combined_annotations = torch.stack(
-                [smoothed_beats, smoothed_downbeats], dim=0
-            )
+            # Convert to 3-label one-hot format
+            # Channel 0: beat-only
+            # Channel 1: downbeat
+            # Channel 2: neither
+            labels = torch.zeros(3, num_frames)
+            labels[0] = smoothed_beats
+            labels[1] = smoothed_downbeats
+            labels[2] = 1 - labels[0] - labels[1]
 
             # Save combined tensor
-            torch.save(combined_annotations, output_path)
+            torch.save(labels, output_path)
 
             count += 1
 

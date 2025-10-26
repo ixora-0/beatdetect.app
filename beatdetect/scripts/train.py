@@ -6,7 +6,7 @@ from tqdm import tqdm, trange
 
 from ..config_loader import Config, load_config
 from ..data import BeatDataset, collate_fn
-from ..model import BeatDetectTCN, create_mock_inputs, masked_weighted_bce_logits
+from ..model import BeatDetectTCN, create_mock_inputs, masked_weighted_ce
 from ..utils import set_seed
 
 
@@ -52,18 +52,18 @@ def main(config: Config, log: bool = True):
 
     # --- datasets ---
     set_seed(config.random_seed)
-    train_dataset = BeatDataset(config, split="train", device=device)
-    val_dataset = BeatDataset(config, split="val", device=device)
+    train = BeatDataset(config, split="train", require_downbeat=True, device=device)
+    val = BeatDataset(config, split="val", require_downbeat=True, device=device)
 
-    # Use actual_batch_size for DataLoader
+    # --- loaders ---
     train_loader = torch.utils.data.DataLoader(
-        train_dataset,
+        train,
         batch_size=actual_batch_size,
         shuffle=True,
         collate_fn=collate_fn,
     )
     val_loader = torch.utils.data.DataLoader(
-        val_dataset,
+        val,
         batch_size=actual_batch_size,
         shuffle=False,
         collate_fn=collate_fn,
@@ -91,20 +91,18 @@ def main(config: Config, log: bool = True):
             model.eval()
 
         total_loss = 0.0
-        for batch_idx, (_id, mels, fluxes, targets, has_downbeats, masks) in enumerate(
+        for batch_idx, (_id, mels, fluxes, targets, _has_downbeats, masks) in enumerate(
             tqdm(loader, desc="Train" if training else "Val", unit="batch")
         ):
             with torch.set_grad_enabled(training):
                 logits = model(mels, fluxes, return_logits=True)  # (B, 2, T)
 
-                loss = masked_weighted_bce_logits(logits, targets, has_downbeats, masks)
+                loss = masked_weighted_ce(logits, targets, masks)
 
                 if training:
-                    # Normalize loss for gradient accumulation
                     loss = loss / accum_iter
                     loss.backward()
 
-                    # Update weights when accumulated enough gradients or at the end
                     if ((batch_idx + 1) % accum_iter == 0) or (
                         batch_idx + 1 == len(loader)
                     ):

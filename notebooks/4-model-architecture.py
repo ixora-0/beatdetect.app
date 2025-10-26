@@ -12,6 +12,7 @@ def _():
 
     from beatdetect.config_loader import load_config
     from beatdetect.model import BeatDetectTCN
+
     return BeatDetectTCN, load_config, mo, torchinfo, torchview
 
 
@@ -85,25 +86,12 @@ def _(config):
             w += (kernel_size - 1) * dilations[layer]
         return w / fps
 
+    receptive_field_duration(
+        config.hypers.kernel_size,
+        len(config.hypers.channels),
+        config.hypers.dilations,
+    )
 
-    print(
-        "TCN #1: {}s".format(
-            receptive_field_duration(
-                config.hypers.tcn1.kernel_size,
-                len(config.hypers.tcn1.channels),
-                config.hypers.tcn1.dilations,
-            )
-        )
-    )
-    print(
-        "TCN #2: {}s".format(
-            receptive_field_duration(
-                config.hypers.tcn2.kernel_size,
-                len(config.hypers.tcn2.channels),
-                config.hypers.tcn2.dilations,
-            )
-        )
-    )
     return
 
 

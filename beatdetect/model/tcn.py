@@ -23,8 +23,9 @@ class BeatDetectTCN(nn.Module):
             use_gate=True,
         )
 
-        # two output channels, 0 -> beat, 1 -> downbeat
-        self.logit_head = nn.Conv1d(hypers.channels[-1], 2, kernel_size=1, bias=True)
+        # 3 output channels:
+        # 0 -> beat-only, 1 -> downbeat, 2 -> no beat
+        self.logit_head = nn.Conv1d(hypers.channels[-1], 3, kernel_size=1, bias=True)
 
     def forward(self, mel, flux, return_logits=False):
         """
@@ -32,10 +33,10 @@ class BeatDetectTCN(nn.Module):
         flux: (B, T)
         """
         flux = flux.unsqueeze(1)  # → (B, 1, T)
-        x = torch.cat([mel, flux], dim=1)  # (B, 129, T)
-        x = self.tcn(x)  # (B, 64, T)
-        logits = self.logit_head(x)  # (B, 2, T)
+        x = torch.cat([mel, flux], dim=1)  # (B, N_MELS, T)
+        x = self.tcn(x)  # (B, C, T)
+        logits = self.logit_head(x)  # (B, 3, T)
 
         if return_logits:
             return logits
-        return torch.sigmoid(logits)  # inference -> probabilities
+        return torch.softmax(logits, dim=1)  # inference -> probabilities
