@@ -19,6 +19,7 @@ def _():
 
     from beatdetect.config_loader import load_config
     from beatdetect.utils.paths import PathResolver
+
     return (
         PathResolver,
         go,
@@ -137,7 +138,9 @@ def _(fn, paths, pl):
 
 @app.cell(hide_code=True)
 def _(mo):
-    mo.md(r"""Ignoring downbeats for our purpose. Also trimming it down to our audio slice.""")
+    mo.md(
+        r"""Ignoring downbeats for our purpose. Also trimming it down to our audio slice."""
+    )
     return
 
 
@@ -229,7 +232,6 @@ def _(annotated_beats, go, make_subplots, melspect, np, px, spectral_flux, xs):
 
         return beat_lines
 
-
     _fig = make_subplots(
         rows=2,
         cols=1,
@@ -319,7 +321,6 @@ def _(config, go, inferred_tempo, librosa, spectral_flux, xs):
         hop_length=config.spectrogram.hop_length,
     )[0]
 
-
     _fig = go.Figure()
 
     _fig.add_trace(
@@ -344,7 +345,6 @@ def _(config, go, inferred_tempo, librosa, spectral_flux, xs):
             bgcolor="rgba(0,0,0,0.5)",
         )
 
-
     # Set axis labels
     _fig.update_layout(
         title="Tempogram",
@@ -356,7 +356,9 @@ def _(config, go, inferred_tempo, librosa, spectral_flux, xs):
 
 @app.cell(hide_code=True)
 def _(mo):
-    mo.md(r"""Getting the autocorrelation of the spectral flux. Peaks in the first plot are time lags where the spectral flux pattern most closely matches itself, which corresponding to beat intervals. The second plot is on a BPM (frequency) scale instead of lag time (period). Peaks on the this plot is usually multiples and factors of the actual tempo. Estimated tempo is inferred from where the peaks are and also what are the most common BPM that we see in music (usually between 30 - 300 BPM).""")
+    mo.md(
+        r"""Getting the autocorrelation of the spectral flux. Peaks in the first plot are time lags where the spectral flux pattern most closely matches itself, which corresponding to beat intervals. The second plot is on a BPM (frequency) scale instead of lag time (period). Peaks on the this plot is usually multiples and factors of the actual tempo. Estimated tempo is inferred from where the peaks are and also what are the most common BPM that we see in music (usually between 30 - 300 BPM)."""
+    )
     return
 
 
@@ -402,7 +404,8 @@ def _(
     for y, name, color in zip(
         [ac_global, ac_local],
         ["Global autocorrelation", "Local autocorrelation"],
-        _colors[:2], strict=False,
+        _colors[:2],
+        strict=False,
     ):
         _fig.add_trace(
             go.Scatter(
@@ -420,7 +423,8 @@ def _(
     for y, name, color in zip(
         [ac_global[1:], ac_local[1:]],
         ["Global autocorrelation", "Local autocorrelation"],
-        _colors[:2], strict=False,
+        _colors[:2],
+        strict=False,
     ):
         _fig.add_trace(
             go.Scatter(
@@ -437,7 +441,6 @@ def _(
 
     # Set log scale for BPM axis
     _fig.update_xaxes(type="log", title_text="Tempo (BPM)", row=2, col=1)
-
 
     for _label, _tempo in [
         ("Inferred", inferred_tempo),
@@ -462,7 +465,6 @@ def _(
             yanchor="bottom",
             bgcolor="rgba(0,0,0,0.5)",
         )
-
 
     # Set labels
     _fig.update_xaxes(title_text="Lag (s)", row=1, col=1)
@@ -506,9 +508,7 @@ def _(config, librosa, np):
 
         # Search range for previous beat
         # previous 2 periods -> 0.5 periods
-        search_window = np.arange(
-            -2 * period, -np.round(period / 2) + 1, dtype=int
-        )
+        search_window = np.arange(-2 * period, -np.round(period / 2) + 1, dtype=int)
 
         # penalty[i] = gaussian-like penalty on how far the candidate interval deviates from the ideal period, controlled by tightness.
         # Deviation is -search_window[i] The closer deviation is to period, the smaller the penalty.
@@ -533,9 +533,9 @@ def _(config, librosa, np):
             beat_location = np.argmax(candidate_scores)
 
             # Add the local score
-            cumulative_score[frame] = (
-                1 - alpha
-            ) * score + alpha * candidate_scores[beat_location]
+            cumulative_score[frame] = (1 - alpha) * score + alpha * candidate_scores[
+                beat_location
+            ]
 
             # Special case the first onset.  Stop if the localscore is small
             if is_first_beat and score < 0.01 * local_score.max():
@@ -570,6 +570,7 @@ def _(config, librosa, np):
         )
 
         return beats
+
     return (beat_track_dp,)
 
 
@@ -634,9 +635,7 @@ def _(annotated_beats, estimated_beats, mir_eval):
 
 @app.cell
 def _(annotated_beats, estimated_beats, mir_eval):
-    CMLc, CMLt, AMLc, AMLt = mir_eval.beat.continuity(
-        annotated_beats, estimated_beats
-    )
+    CMLc, CMLt, AMLc, AMLt = mir_eval.beat.continuity(annotated_beats, estimated_beats)
     AMLt
     return
 
