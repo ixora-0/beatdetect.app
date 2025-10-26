@@ -16,6 +16,7 @@ class BeatDataset(Dataset):
         config: Config,
         split: str,
         device: torch.device,
+        require_downbeat: bool = False,
         datasets: list[str] | None = None,
         use_pitch_shift: bool = True,
         pitch_shift_prob: float = 0.5,
@@ -27,6 +28,7 @@ class BeatDataset(Dataset):
             config: Configuration object
             datasets: List of datasets to include
             split: Split to load ('train', 'val', 'test').
+            require_downbeat: If True, skip samples that don't have downbeat annotations
             use_pitch_shift: Whether to use pitch shift augmentation
             pitch_shift_prob: Probability of using pitch shifted version
         """
@@ -40,11 +42,20 @@ class BeatDataset(Dataset):
         self.splits_file = config.paths.data.processed.splits_info
         self.use_pitch_shift = use_pitch_shift and split == "train"  # Only for training
         self.pitch_shift_prob = pitch_shift_prob
+        self.require_downbeat = require_downbeat
+
         if not self.splits_file.exists():
             raise FileNotFoundError(
                 f"Splits file not found: {self.splits_file}. "
                 "Please run the dataset splitting script first."
             )
+
+        with config.paths.data.processed.datasets_info.open("r", encoding="utf-8") as f:
+            info = json.load(f)
+        self.has_downbeat = {
+            dataset: info[dataset]["has_downbeats"] for dataset in info.keys()
+        }
+
         # Load only samples for this split from CSV
         dataset_set = set(self.datasets)
         self.samples = []
@@ -52,6 +63,10 @@ class BeatDataset(Dataset):
             reader = csv.DictReader(f)
             for row in reader:
                 if row["dataset"] in dataset_set and row["split"] == split:
+                    if require_downbeat and not self.has_downbeat.get(
+                        row["dataset"], False
+                    ):
+                        continue
                     self.samples.append((row["dataset"], row["name"]))
 
         print(f"Loaded {split} split: {len(self.samples)} samples")
@@ -60,12 +75,6 @@ class BeatDataset(Dataset):
         for dataset in config.downloads.datasets:
             paths = PathResolver(self.config, dataset)
             self.spec_archives[dataset] = np.load(paths.spectrograms_file)
-
-        with config.paths.data.processed.datasets_info.open("r", encoding="utf-8") as f:
-            info = json.load(f)
-        self.has_downbeat = {
-            dataset: info[dataset]["has_downbeats"] for dataset in info.keys()
-        }
 
     def __len__(self):
         return len(self.samples)
