@@ -72,7 +72,7 @@ class BeatDataset(Dataset):
         print(f"Loaded {split} split: {len(self.samples)} samples")
 
         self.spec_archives = {}
-        for dataset in config.downloads.datasets:
+        for dataset in self.datasets:
             paths = PathResolver(self.config, dataset)
             self.spec_archives[dataset] = np.load(paths.spectrograms_file)
 
