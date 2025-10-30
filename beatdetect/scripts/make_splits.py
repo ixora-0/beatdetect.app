@@ -25,7 +25,7 @@ def load_splits(splits_path: Path) -> dict[str, list[tuple[str, str]]]:
 
 
 def main(config: Config):
-    print("Creating splits.")
+    print(f"Creating splits, random seed = {config.random_seed}.")
     hypers = config.training
 
     # Set seed for reproducibility
