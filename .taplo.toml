@@ -1,0 +1,4 @@
+[[rule]]
+keys = ["post"]
+[rule.formatting]
+array_auto_expand = false

@@ -34,6 +34,7 @@ url_template = "https://zenodo.org/records/13922116/files/${dataset}.zip?downloa
 [paths]
 models = "models"
 downloads = "data/downloads"
+transitions = "models/transitions.npz"
 
 [paths.data.raw]
 annotations = "data/raw/annotations"
@@ -70,3 +71,12 @@ dropout = 0.01
 kernel_size = 3
 channels = [64, 64, 64, 64, 64, 64, 64, 64]
 dilations = [1, 2, 4, 8, 16, 32, 64, 128]
+[post]
+# standard metronome markings
+tempo_bins = [40, 42, 50, 52, 54, 56, 58, 60, 63, 66, 69, 72, 76, 80, 84, 88, 92, 96, 100, 104, 108, 112, 116, 120, 126, 132, 138, 144, 152, 160, 168, 176, 184, 192, 200, 208]
+# beats per bar
+time_signatures = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+# parameters for beat period transition probability distribution
+pi = 0.5183737879035278
+lambda1 = 91795.4297938284
+lambda2 = 14.551900090140123

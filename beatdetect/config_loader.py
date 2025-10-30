@@ -30,6 +30,7 @@ class DataPaths(BaseModel):
 class Paths(BaseModel):
     models: Path
     downloads: Path
+    transitions: Path
     data: DataPaths
 
 
@@ -99,6 +100,14 @@ class HypersConfig(BaseModel):
     dilations: list[int]
 
 
+class PostConfig(BaseModel):
+    tempo_bins: list[float]
+    time_signatures: list[int]
+    pi: float
+    lambda1: float
+    lambda2: float
+
+
 class Config(BaseModel):
     random_seed: int
     paths: Paths
@@ -106,6 +115,7 @@ class Config(BaseModel):
     spectrogram: SpectrogramConfig
     training: TrainingConfig
     hypers: HypersConfig
+    post: PostConfig
 
 
 def load_config(path: str | Path = "configs/dev.toml") -> Config:

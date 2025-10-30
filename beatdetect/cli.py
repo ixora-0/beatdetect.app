@@ -66,6 +66,15 @@ def train(
 
 
 @app.command()
+def create_transition_matrix(config: str = "configs/dev.toml"):
+    """Precompute state transition matrix used in postprocessing."""
+    from .model.postprocessing import create_transitions
+
+    cfg = config_loader.load_config(config)
+    create_transitions.main(cfg)
+
+
+@app.command()
 def run_all(config: str = "configs/dev.toml"):
     """Run the full pipeline end-to-end."""
     prepare_data(config)

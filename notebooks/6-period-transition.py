@@ -16,7 +16,6 @@ def _():
 
     from beatdetect.config_loader import load_config
     from beatdetect.utils.paths import iterate_beat_files
-
     return (
         GaussianMixture,
         go,
@@ -122,7 +121,6 @@ def _(all_tempos, np, px):
         labels={"value": "Tempo (BPM)"},
         title="Distribution of Tempi Across Dataset",
     )
-
     return
 
 
@@ -153,7 +151,6 @@ def _(delta, np, px):
         title="Distribution of Tempo Changes Between Consecutive Sections",
         nbins=100,
     )
-
     return
 
 
