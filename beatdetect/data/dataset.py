@@ -3,6 +3,7 @@ import json
 import random
 
 import numpy as np
+import polars as pl
 import torch
 from torch.utils.data import Dataset
 
@@ -112,3 +113,14 @@ class BeatDataset(Dataset):
         has_downbeat = self.has_downbeat[dataset]
 
         return f"{dataset}/{name}", mel, flux, target, has_downbeat
+
+    def get_annotation(self, id: str) -> np.ndarray:
+        dataset, name = id.split("/")
+        paths = PathResolver(self.config, dataset)
+        annotation_file_name = name + ".beats"
+        beat_df = pl.read_csv(
+            paths.resolve_annotations_dir(cleaned=True) / annotation_file_name,
+            separator="\t",
+            has_header=False,
+        )
+        return beat_df.to_numpy()
