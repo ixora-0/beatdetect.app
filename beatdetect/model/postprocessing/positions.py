@@ -4,5 +4,5 @@ def pos_per_beat(period, fps):
     return int(round(base_pos_per_beat * period / base_period))
 
 
-def frames_per_position(period):
-    return period / pos_per_beat(period)
+def frames_per_position(period, fps):
+    return period / pos_per_beat(period, fps)

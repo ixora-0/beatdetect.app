@@ -75,6 +75,15 @@ def create_transition_matrix(config: str = "configs/dev.toml"):
 
 
 @app.command()
+def create_init_dist(config: str = "configs/dev.toml"):
+    """Initial log probability distributions from data for postprocessing"""
+    from .model.postprocessing import create_init_dist
+
+    cfg = config_loader.load_config(config)
+    create_init_dist.main(cfg)
+
+
+@app.command()
 def run_all(config: str = "configs/dev.toml"):
     """Run the full pipeline end-to-end."""
     prepare_data(config)

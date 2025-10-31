@@ -31,6 +31,7 @@ class Paths(BaseModel):
     models: Path
     downloads: Path
     transitions: Path
+    init_dist: Path
     data: DataPaths
 
 
