@@ -30,7 +30,8 @@
         config.allowUnfree = true;  # for cuda packages
       };
       python = pkgs.python311;
-      projectName = "beatdetect";  # matches [project.name] in pyproject.toml
+      projectName = "beatdetect-app";  # matches [project.name] in pyproject.toml
+      toFolderName = s: builtins.replaceStrings ["-"] ["_"] s;
 
       # Load Project Workspace (parses pyproject.toml, uv.lock)
       workspace = inputs.uv2nix.lib.workspace.loadWorkspace { workspaceRoot = ./.; };
@@ -87,7 +88,7 @@
                 fileset = lib.fileset.unions [
                   (old.src + /pyproject.toml)
                   (old.src + /README.md)
-                  (old.src + /${projectName}/__init__.py)
+                  (old.src + /${toFolderName projectName}/__init__.py)
                 ];
               };
 
