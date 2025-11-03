@@ -30,11 +30,11 @@
         config.allowUnfree = true;  # for cuda packages
       };
       python = pkgs.python311;
-      projectName = "beatdetect-app";  # matches [project.name] in pyproject.toml
+      projectName = "beatdetect-model";  # matches [project.name] in pyproject.toml
       toFolderName = s: builtins.replaceStrings ["-"] ["_"] s;
 
       # Load Project Workspace (parses pyproject.toml, uv.lock)
-      workspace = inputs.uv2nix.lib.workspace.loadWorkspace { workspaceRoot = ./.; };
+      workspace = inputs.uv2nix.lib.workspace.loadWorkspace { workspaceRoot = ./beatdetect-model; };
 
       # Generate Nix Overlay from uv.lock
       uvLockedOverlay = workspace.mkPyprojectOverlay {

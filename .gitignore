@@ -10,8 +10,8 @@ wheels/
 .venv
 .direnv
 
-/data/
-models/
+/beatdetect-model/data/
+/beatdetect-model/models/
 
 # pypdl logs
 pypdl.log
