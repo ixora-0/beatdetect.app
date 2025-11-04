@@ -70,7 +70,11 @@
 
       # Create an overlay enabling editable mode for all local dependencies.
       editableOverlay = workspace.mkEditablePyprojectOverlay {
-        root = "$REPO_ROOT";
+        # make it so that our module is discoverable through .pth
+        # this in pyproject.toml also does the same i think
+        # [tool.hatch.build.targets.wheel]
+        # dev-mode-dirs = [<projectname>]
+        root = "$REPO_ROOT/${projectName}";
       };
 
       # Override previous set with our editable overlay.

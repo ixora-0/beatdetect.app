@@ -38,7 +38,7 @@ url = "https://download.pytorch.org/whl/cu126"
 explicit = true
 
 [project.scripts]
-beatdetect-app = "beatdetect-app.cli:app"
+beatdetect-app = "beatdetect_model.cli:app"
 
 [tool.marimo.runtime]
 auto_instantiate = false

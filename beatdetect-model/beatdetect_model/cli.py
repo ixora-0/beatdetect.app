@@ -1,5 +1,6 @@
 import typer
-from beatdetect import config_loader
+
+from . import config_loader
 
 app = typer.Typer(help="Beat detection pipeline CLI")
 
