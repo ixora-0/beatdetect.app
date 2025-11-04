@@ -1,0 +1,11 @@
+default:
+    just --list
+
+test:
+    python -m pytest
+
+notebook:
+    marimo edit
+
+format:
+    ruff format && ruff check --fix

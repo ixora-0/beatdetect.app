@@ -2,6 +2,7 @@
   description = "A flake that use nix to manage uv venv using uv2nix.";
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.05";
+    nixpkgs-unstable.url = "github:NixOS/nixpkgs/nixos-unstable";
 
     flake-utils.url = "github:numtide/flake-utils";
 
@@ -29,6 +30,7 @@
         inherit system;
         config.allowUnfree = true;  # for cuda packages
       };
+      pkgs-unstable = import inputs.nixpkgs-unstable { inherit system; };
       python = pkgs.python311;
       projectName = "beatdetect-model";  # matches [project.name] in pyproject.toml
       toFolderName = s: builtins.replaceStrings ["-"] ["_"] s;
@@ -112,6 +114,8 @@
           uv
           rclone  # for remote mounting dataset
           graphviz
+        ]) ++ (with pkgs-unstable; [
+          just
         ]);
 
         env = {
