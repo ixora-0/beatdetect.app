@@ -3,13 +3,14 @@ from unittest.mock import Mock, mock_open, patch
 
 import pytest
 
-from beatdetect.data import BeatDataset
+from beatdetect_model.data import BeatDataset
 
 
 @pytest.fixture
 def mock_config():
     """Create a mock configuration object."""
     config = Mock()
+    config.random_seed = 0
     config.downloads.datasets = ["dataset1", "dataset2"]
     config.paths.data.raw.spectrograms = Path("/mock/spectrograms")
     config.paths.data.processed.spectral_flux = Path("/mock/spectral_flux")
@@ -18,7 +19,25 @@ def mock_config():
     splits_info_mock = Mock()
     config.paths.data.processed.splits_info = splits_info_mock
 
+    # Mock the datasets_info path
+    datasets_info_mock = Mock()
+    config.paths.data.processed.datasets_info = datasets_info_mock
+
     return config
+
+
+@pytest.fixture
+def sample_datasets_info():
+    return """
+{
+  "dataset1": {
+    "has_downbeats": true
+  },
+  "dataset2": {
+    "has_downbeats": true
+  }
+}
+"""
 
 
 @pytest.fixture
@@ -29,32 +48,48 @@ dataset1,track1,train
 dataset2,track2,val"""
 
 
-def test_beat_dataset_initialization(mock_config, sample_splits_csv):
+def test_beat_dataset_initialization(
+    mock_config, sample_datasets_info, sample_splits_csv
+):
     """Test that BeatDataset initializes without errors."""
+    import torch
+
     mock_config.paths.data.processed.splits_info.exists.return_value = True
 
-    with patch("builtins.open", mock_open(read_data=sample_splits_csv)):
+    with (
+        patch.object(
+            mock_config.paths.data.processed.datasets_info,
+            "open",
+            mock_open(read_data=sample_datasets_info),
+        ),
+        patch("builtins.open", mock_open(read_data=sample_splits_csv)),
+        patch("numpy.load"),  # Mock np.load to avoid actual file access
+    ):
         with patch("builtins.print"):  # Suppress print output
             # Test basic initialization
-            dataset = BeatDataset(mock_config, "train")
+            dataset = BeatDataset(mock_config, "train", torch.device("cpu"))
             assert len(dataset) >= 0
 
             # Test with custom datasets
-            dataset = BeatDataset(mock_config, "train", datasets=["dataset1"])
+            dataset = BeatDataset(
+                mock_config, "train", torch.device("cpu"), datasets=["dataset1"]
+            )
             assert len(dataset) >= 0
 
 
 def test_splits_file_missing_raises_error(mock_config):
     """Test that missing splits file raises FileNotFoundError."""
+    import torch
+
     mock_config.paths.data.processed.splits_info.exists.return_value = False
 
     with pytest.raises(FileNotFoundError):
-        BeatDataset(mock_config, "train")
+        BeatDataset(mock_config, "train", torch.device("cpu"))
 
 
-@patch("beatdetect.data.dataset.PathResolver")
+@patch("beatdetect_model.data.dataset.PathResolver")
 def test_dataset_output_shapes(
-    mock_path_resolver_class, mock_config, sample_splits_csv
+    mock_path_resolver_class, mock_config, sample_datasets_info, sample_splits_csv
 ):
     """Test that dataset returns tensors with expected shapes."""
     import numpy as np
@@ -66,48 +101,60 @@ def test_dataset_output_shapes(
     # Mock PathResolver instance
     mock_resolver = Mock()
     mock_resolver.spectrograms_file = Path("/mock/spectrograms.npz")
-    mock_resolver.encoded_beats_dir = Path("/mock/beats")
-    mock_resolver.encoded_downbeats_dir = Path("/mock/downbeats")
+    mock_resolver.encoded_annotations_dir = Path("/mock/annotations")
     mock_path_resolver_class.return_value = mock_resolver
 
     # Create mock data with known shapes
-    mel_data = np.random.randn(1000, 128).astype(
+    T = 1000
+    mel_data = np.random.randn(T, 128).astype(
         np.float32
-    )  # Will be transposed to (128, 1000)
-    flux_data = torch.randn(1000)
-    beats_data = torch.randn(1000)
-    downbeats_data = torch.randn(1000)
+    )  # Will be transposed to (128, T)
+    flux_data = torch.randn(T)
+    target_data = torch.randn(3, T)
 
-    with patch("builtins.open", mock_open(read_data=sample_splits_csv)):
-        with patch("builtins.print"):
-            dataset = BeatDataset(mock_config, "train")
+    with (
+        patch.object(
+            mock_config.paths.data.processed.datasets_info,
+            "open",
+            mock_open(read_data=sample_datasets_info),
+        ),
+        patch("builtins.open", mock_open(read_data=sample_splits_csv)),
+    ):
+        # Mock the numpy archive
+        mock_archive = Mock()
+        mock_archive.get.return_value = mel_data
 
-    # Mock the numpy archive as a context manager
-    mock_archive = Mock()
-    mock_archive.get.return_value = mel_data
+        with patch("numpy.load") as mock_np_load:
+            mock_np_load.return_value = mock_archive
 
-    with patch("numpy.load") as mock_np_load:
-        mock_np_load.return_value.__enter__.return_value = mock_archive
-        mock_np_load.return_value.__exit__.return_value = None
+            with patch("builtins.print"):
+                dataset = BeatDataset(mock_config, "train", torch.device("cpu"))
 
-        with patch("torch.load") as mock_torch_load:
-            # Return different data based on which file is being loaded
-            mock_torch_load.side_effect = [flux_data, beats_data, downbeats_data]
+    with (
+        patch("torch.load") as mock_torch_load,
+        patch("numpy.load") as mock_np_load,
+    ):
+        # Mock the numpy archive for __getitem__
+        mock_archive = Mock()
+        mock_archive.get.return_value = mel_data
+        mock_np_load.return_value = mock_archive
 
-            # Get first sample
-            mel, flux, target = dataset[0]
+        # Mock torch.load to return flux and target data
+        mock_torch_load.side_effect = [flux_data, target_data]
+
+        id_str, mel, flux, target, has_downbeat = dataset[0]
 
     # Test shapes
-    assert mel.shape == (128, 1000), f"Expected mel shape (128, 1000), got {mel.shape}"
-    assert flux.shape == (1000,), f"Expected flux shape (1000,), got {flux.shape}"
-    assert target.shape == (2, 1000), (
-        f"Expected target shape (2, 1000), got {target.shape}"
-    )
+    assert mel.shape == (128, T), f"Expected mel shape (128, {T}), got {mel.shape}"
+    assert flux.shape == (T,), f"Expected flux shape ({T},), got {flux.shape}"
+    assert target.shape == (3, T), f"Expected target shape (3, {T}), got {target.shape}"
 
     # Test types
+    assert isinstance(id_str, str)
     assert isinstance(mel, torch.Tensor)
     assert isinstance(flux, torch.Tensor)
     assert isinstance(target, torch.Tensor)
+    assert isinstance(has_downbeat, bool)
 
 
 if __name__ == "__main__":

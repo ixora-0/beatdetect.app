@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from beatdetect.config_loader import Config, load_config
+from beatdetect_model.config_loader import Config, load_config
 
 
 def test_load_config_minimal():
