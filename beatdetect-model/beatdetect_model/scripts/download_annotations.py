@@ -3,9 +3,8 @@ import time
 import urllib.request
 import zipfile
 
-from tqdm import tqdm
-
 from beatdetect.config_loader import Config, load_config
+from tqdm import tqdm
 
 
 class TqdmHook:

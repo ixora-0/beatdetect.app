@@ -5,7 +5,6 @@ import librosa
 import numpy as np
 import torch
 import torchaudio
-
 from beatdetect.utils.paths import PathResolver
 
 from ..config_loader import Config, load_config

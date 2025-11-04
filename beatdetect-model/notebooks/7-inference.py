@@ -6,15 +6,16 @@ app = marimo.App(width="medium")
 
 @app.cell
 def _():
-    from beatdetect.model.postprocessing.inference import beam_search
+    import mir_eval
+    import plotly.express as px
+    import plotly.graph_objects as go
     import torch
     from beatdetect.config_loader import load_config
     from beatdetect.data import BeatDataset
     from beatdetect.model import BeatDetectTCN
-    import plotly.express as px
-    import plotly.graph_objects as go
+    from beatdetect.model.postprocessing.inference import beam_search
     from plotly.subplots import make_subplots
-    import mir_eval
+
     return (
         BeatDataset,
         BeatDetectTCN,
@@ -96,7 +97,6 @@ def _(
 
         return beat_lines
 
-
     _fig = make_subplots(
         rows=2,
         cols=1,
@@ -116,9 +116,7 @@ def _(
         col=1,
     )
 
-
     _showed_legend = {"Downbeat": False, "Beat": False}
-
 
     for _line in create_beat_lines(
         [b[0] * config.spectrogram.fps for b in predicted_beats if b[1] != 1],
@@ -195,14 +193,15 @@ def _(
             col=1,
         )
 
-
     _fig
     return
 
 
 @app.cell
 def _(annotated_beats, mir_eval, predicted_beats):
-    CMLc, CMLt, AMLc, AMLt = mir_eval.beat.continuity(annotated_beats[:, 0], predicted_beats[:, 0])
+    CMLc, CMLt, AMLc, AMLt = mir_eval.beat.continuity(
+        annotated_beats[:, 0], predicted_beats[:, 0]
+    )
     CMLc, CMLt, AMLc, AMLt
     return
 

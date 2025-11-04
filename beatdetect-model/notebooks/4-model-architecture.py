@@ -9,7 +9,6 @@ def _():
     import marimo as mo
     import torchinfo
     import torchview
-
     from beatdetect.config_loader import load_config
     from beatdetect.model import BeatDetectTCN
 

@@ -14,10 +14,9 @@ def _():
     import plotly.graph_objects as go
     import polars as pl
     import torch
-    from plotly.subplots import make_subplots
-
     from beatdetect.config_loader import load_config
     from beatdetect.utils.paths import PathResolver, iterate_beat_files
+    from plotly.subplots import make_subplots
 
     return (
         Counter,

@@ -14,9 +14,9 @@ def _():
     import polars.selectors as cs
     import torch
     import torchaudio
-
     from beatdetect.config_loader import load_config
     from beatdetect.utils.paths import PathResolver
+
     return (
         PathResolver,
         cs,
@@ -172,8 +172,7 @@ def _(beat_df, config, px, torch, waveform):
     ]
 
     _fig = px.line(
-        x=_start
-        + torch.arange(len(_waveform_slice)) / config.spectrogram.sample_rate,
+        x=_start + torch.arange(len(_waveform_slice)) / config.spectrogram.sample_rate,
         y=_waveform_slice,
         title="Waveform with beats",
         width=1000,

@@ -1,6 +1,5 @@
 import numpy as np
 import polars as pl
-
 from beatdetect.config_loader import Config, load_config
 from beatdetect.utils.paths import iterate_beat_files
 

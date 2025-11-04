@@ -11,11 +11,11 @@ def _():
     import plotly.express as px
     import plotly.graph_objects as go
     import polars as pl
+    from beatdetect.config_loader import load_config
+    from beatdetect.utils.paths import iterate_beat_files
     from scipy.stats import laplace, norm
     from sklearn.mixture import GaussianMixture
 
-    from beatdetect.config_loader import load_config
-    from beatdetect.utils.paths import iterate_beat_files
     return (
         GaussianMixture,
         go,

@@ -15,10 +15,9 @@ def _():
     import polars as pl
     import torch
     import torchaudio
-    from plotly.subplots import make_subplots
-
     from beatdetect.config_loader import load_config
     from beatdetect.utils.paths import PathResolver
+    from plotly.subplots import make_subplots
 
     return (
         PathResolver,
