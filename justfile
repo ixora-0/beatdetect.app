@@ -6,4 +6,4 @@ default:
 
 test: model::test
 format: model::format web::format
-lint: web::lint
+lint: model::lint web::lint
