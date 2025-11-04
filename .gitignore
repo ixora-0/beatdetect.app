@@ -10,10 +10,16 @@ wheels/
 .venv
 .direnv
 
-/beatdetect-model/data/
-/beatdetect-model/models/
-
 # pypdl logs
 pypdl.log
 
 __marimo__
+
+# model
+/beatdetect-model/data/
+/beatdetect-model/models/
+
+# web
+/beatdetect-web/node_modules
+/beatdetect-web/.svelte-kit
+/beatdetect-web/build

@@ -1,0 +1,25 @@
+default:
+    just --list
+
+# defining scripts in package.json
+
+dev:
+    bun dev
+
+build:
+    bun build
+
+preview:
+    bun preview
+
+prepare:
+    bun prepare
+
+check:
+    bun check
+
+format:
+    bun format
+
+lint:
+    bun lint

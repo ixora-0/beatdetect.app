@@ -116,6 +116,7 @@
           graphviz
         ]) ++ (with pkgs-unstable; [
           just
+          bun
         ]);
 
         env = {
