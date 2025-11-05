@@ -11,8 +11,9 @@
   });
   interface Props {
     onFileUploaded?: (file: File) => void;
+    onFileClear?: () => void;
   }
-  let { onFileUploaded }: Props = $props();
+  let { onFileUploaded, onFileClear }: Props = $props();
 
   let uploadedFile: File | null = $state(null);
   function onFileAccept(details: { files: File[] }) {
@@ -38,7 +39,10 @@
     <span>File uploaded: {uploadedFile.name}</span>
     <button
       type="button"
-      onclick={clearFile}
+      onclick={() => {
+        clearFile();
+        if (onFileClear) onFileClear();
+      }}
       class="btn-icon preset-outlined transition-all hover:preset-filled-error-500 hover:shadow-lg hover:shadow-error-500/50"
       title="Clear file"
       aria-label="Clear file"

@@ -1,10 +1,52 @@
 <script lang="ts">
+  import IconArrowRightRegular from 'phosphor-icons-svelte/IconArrowRightRegular.svelte';
   import AudioFileUpload from '$lib/components/AudioFileUpload.svelte';
   import LightSwitch from '$lib/components/LightSwitch.svelte';
   import { Progress } from '@skeletonlabs/skeleton-svelte';
+  import WaveSurfer from 'wavesurfer.js';
+
+  let uploadedFile: File | null = $state(null);
+  let wavesurfer: WaveSurfer | null = null;
+  let isWaveformReady = $state(false);
+
+  $effect(() => {
+    if (wavesurfer) {
+      wavesurfer.destroy();
+      wavesurfer = null;
+    }
+    isWaveformReady = false;
+
+    if (uploadedFile) {
+      const url = URL.createObjectURL(uploadedFile);
+
+      wavesurfer = WaveSurfer.create({
+        container: '#waveform',
+        waveColor: '#4F4A85',
+        progressColor: '#383351',
+        url: url
+      });
+
+      wavesurfer.on('interaction', () => {
+        wavesurfer?.play();
+      });
+
+      wavesurfer.on('ready', () => {
+        URL.revokeObjectURL(url);
+        isWaveformReady = true;
+      });
+    }
+
+    // Cleanup function runs when effect re-runs or component unmounts
+    return () => {
+      if (wavesurfer) {
+        wavesurfer.destroy();
+        wavesurfer = null;
+      }
+    };
+  });
 
   let progress: number | null = $state(null);
-  async function onFileUploaded(file: File) {
+  async function processFile() {
     progress = 0;
 
     // transform audio here
@@ -23,7 +65,23 @@
 
 <h1>Beat detect app</h1>
 <LightSwitch />
-<AudioFileUpload {onFileUploaded} />
+{#if uploadedFile !== null}
+  <div
+    id="waveform"
+    class="h-32 w-full {!isWaveformReady ? 'placeholder animate-pulse' : ''}"
+  ></div>
+{/if}
+
+<AudioFileUpload
+  onFileUploaded={(file) => (uploadedFile = file)}
+  onFileClear={() => (uploadedFile = null)}
+/>
+
+{#if isWaveformReady}
+  <button class="btn preset-filled" onclick={processFile}
+    ><span>Start</span><IconArrowRightRegular class="size-6" /></button
+  >
+{/if}
 
 {#if progress !== null}
   <div class="mt-4">Processing audio...</div>

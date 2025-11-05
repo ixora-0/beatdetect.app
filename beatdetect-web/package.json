@@ -40,5 +40,8 @@
     "format": "prettier --write .",
     "lint": "prettier --check . && eslint ."
   },
-  "type": "module"
+  "type": "module",
+  "dependencies": {
+    "wavesurfer.js": "^7.11.1"
+  }
 }
