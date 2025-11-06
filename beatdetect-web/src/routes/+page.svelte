@@ -1,15 +1,17 @@
 <script lang="ts">
   import IconArrowRightRegular from 'phosphor-icons-svelte/IconArrowRightRegular.svelte';
   import AudioFileUpload from '$lib/components/AudioFileUpload.svelte';
+  import IconWarningRegular from 'phosphor-icons-svelte/IconWarningRegular.svelte';
   import LightSwitch from '$lib/components/LightSwitch.svelte';
   import { Progress } from '@skeletonlabs/skeleton-svelte';
+  import { Toast, createToaster } from '@skeletonlabs/skeleton-svelte';
   import WaveSurfer from 'wavesurfer.js';
   import type { PageProps } from './$types';
 
   let { data }: PageProps = $props();
   const { config } = data;
-  console.log(config);
 
+  let toaster = createToaster({ placement: 'top-end' });
   let uploadedFile: File | null = $state(null);
   let wavesurfer: WaveSurfer | null = null;
   let isWaveformReady = $state(false);
@@ -80,6 +82,7 @@
 <AudioFileUpload
   onFileUploaded={(file) => (uploadedFile = file)}
   onFileClear={() => (uploadedFile = null)}
+  {toaster}
 />
 
 {#if isWaveformReady}
@@ -97,3 +100,16 @@
     </Progress.Track>
   </Progress>
 {/if}
+
+<Toast.Group {toaster}>
+  {#snippet children(toast)}
+    <Toast {toast}>
+      <IconWarningRegular class="size-8" />
+      <Toast.Message>
+        <Toast.Title class="flex items-center gap-2">{toast.title}</Toast.Title>
+        <Toast.Description>{toast.description}</Toast.Description>
+      </Toast.Message>
+      <Toast.CloseTrigger />
+    </Toast>
+  {/snippet}
+</Toast.Group>
