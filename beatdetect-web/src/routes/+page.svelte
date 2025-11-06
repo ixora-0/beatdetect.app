@@ -4,6 +4,11 @@
   import LightSwitch from '$lib/components/LightSwitch.svelte';
   import { Progress } from '@skeletonlabs/skeleton-svelte';
   import WaveSurfer from 'wavesurfer.js';
+  import type { PageProps } from './$types';
+
+  let { data }: PageProps = $props();
+  const { config } = data;
+  console.log(config);
 
   let uploadedFile: File | null = $state(null);
   let wavesurfer: WaveSurfer | null = null;
