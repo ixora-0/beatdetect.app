@@ -92,3 +92,14 @@ export interface Config {
   readonly hypers: HypersConfig;
   readonly post: PostConfig;
 }
+
+/** Config without calculated fields */
+export interface TomlConfig {
+  readonly random_seed: number;
+  readonly paths: Paths;
+  readonly downloads: Downloads;
+  readonly spectrogram: Omit<SpectrogramConfig, 'n_stft' | 'fps'>;
+  readonly training: Omit<TrainingConfig, 'test_ratio'>;
+  readonly hypers: HypersConfig;
+  readonly post: PostConfig;
+}

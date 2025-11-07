@@ -1,7 +1,7 @@
 import path from 'path';
 import { readFileSync } from 'fs';
 import { parse } from '@iarna/toml';
-import type { SpectrogramConfig, TrainingConfig, Config } from '$lib/types/config';
+import type { SpectrogramConfig, TrainingConfig, Config, TomlConfig } from '$lib/types/config';
 import type { LayoutServerLoad } from './$types';
 import { fileURLToPath } from 'url';
 
@@ -13,7 +13,7 @@ export const load: LayoutServerLoad = async () => {
   // NOTE: careful about path in prod
   const DEFAULT_PATH = path.resolve(__dirname, '../../../configs/dev.toml');
   const tomlContent = readFileSync(DEFAULT_PATH, 'utf-8');
-  const parsed = parse(tomlContent) as any;
+  const parsed = parse(tomlContent) as unknown as TomlConfig;
   // Add calculated fields
   const spectrogram: SpectrogramConfig = {
     ...parsed.spectrogram,
