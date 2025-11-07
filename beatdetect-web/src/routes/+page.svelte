@@ -1,14 +1,11 @@
 <script lang="ts">
   import IconArrowRightRegular from 'phosphor-icons-svelte/IconArrowRightRegular.svelte';
-  import AudioFileUpload from '$lib/components/AudioFileUpload.svelte';
   import IconWarningRegular from 'phosphor-icons-svelte/IconWarningRegular.svelte';
+  import AudioFileUpload from '$lib/components/AudioFileUpload.svelte';
   import LightSwitch from '$lib/components/LightSwitch.svelte';
+  import Waveform from '$lib/components/Waveform.svelte';
   import { Progress } from '@skeletonlabs/skeleton-svelte';
   import { Toast, createToaster } from '@skeletonlabs/skeleton-svelte';
-  import WaveSurfer from 'wavesurfer.js';
-  import Spectrogram from 'wavesurfer.js/dist/plugins/spectrogram.js';
-  import Timeline from 'wavesurfer.js/dist/plugins/timeline.js';
-  import Zoom from 'wavesurfer.js/dist/plugins/zoom.js';
   import type { PageProps } from './$types';
   import SpectrogramWorker from './spectrogram-worker.ts?worker';
 
@@ -17,49 +14,9 @@
 
   let toaster = createToaster({ placement: 'top-end' });
   let uploadedFile: File | null = $state(null);
-  let wavesurfer: WaveSurfer | null = null;
+
+  let waveform: Waveform;
   let isWaveformReady = $state(false);
-
-  $effect(() => {
-    if (wavesurfer) {
-      wavesurfer.destroy();
-      wavesurfer = null;
-    }
-    isWaveformReady = false;
-
-    if (uploadedFile) {
-      const url = URL.createObjectURL(uploadedFile);
-
-      wavesurfer = WaveSurfer.create({
-        container: '#waveform',
-        waveColor: '#4F4A85',
-        progressColor: '#383351',
-        url: url,
-        minPxPerSec: 20,
-        plugins: [
-          Timeline.create({ height: 25, style: { fontSize: '20px' } }),
-          Zoom.create({ scale: 0.1, maxZoom: 200 })
-        ]
-      });
-
-      wavesurfer.on('interaction', () => {
-        wavesurfer?.play();
-      });
-
-      wavesurfer.on('ready', () => {
-        URL.revokeObjectURL(url);
-        isWaveformReady = true;
-      });
-    }
-
-    // Cleanup function runs when effect re-runs or component unmounts
-    return () => {
-      if (wavesurfer) {
-        wavesurfer.destroy();
-        wavesurfer = null;
-      }
-    };
-  });
 
   let progress: number | null = $state(null);
   async function calculateSpectrogram(): Promise<number[][] | null> {
@@ -125,24 +82,9 @@
     });
   }
 
-  async function processFile() {
-    await calculateSpectrogram();
-
-    // HACK: Recalculating spectrogram here for visualization in wavesurfer
-    // Can't get calculated spectrogram from wavesurfer,
-    // and frequenciesDataUrl doesn't work
-    wavesurfer?.registerPlugin(
-      Spectrogram.create({
-        sampleRate: config.spectrogram.sample_rate,
-        // This creates white background
-        // frequencyMax: config.spectrogram.f_max,
-        // frequencyMin: config.spectrogram.f_min,
-        fftSamples: config.spectrogram.n_fft,
-        useWebWorker: true,
-        scale: 'mel',
-        labels: true
-      })
-    );
+  function processFile() {
+    calculateSpectrogram();
+    waveform.addSpectrogram();
   }
 </script>
 
@@ -164,12 +106,12 @@
   </label>
 </form>
 
-{#if uploadedFile !== null}
-  <div
-    id="waveform"
-    class="w-full {!isWaveformReady ? 'h-32 placeholder animate-pulse' : ''}"
-  ></div>
-{/if}
+<Waveform
+  {config}
+  {uploadedFile}
+  onReadyChange={(ready) => (isWaveformReady = ready)}
+  bind:this={waveform}
+/>
 
 <AudioFileUpload
   onFileUploaded={(file) => (uploadedFile = file)}
