@@ -4,7 +4,7 @@
   import AudioFileUpload from '$lib/components/AudioFileUpload.svelte';
   import LightSwitch from '$lib/components/LightSwitch.svelte';
   import Waveform from '$lib/components/Waveform.svelte';
-  import { Progress } from '@skeletonlabs/skeleton-svelte';
+  import Tasks from '$lib/components/Tasks.svelte';
   import { Toast, createToaster } from '@skeletonlabs/skeleton-svelte';
   import type { PageProps } from './$types';
   import SpectrogramWorker from './spectrogram-worker.ts?worker';
@@ -17,8 +17,8 @@
 
   let waveform: Waveform;
   let isWaveformReady = $state(false);
+  let tasks: Tasks;
 
-  let progress: number | null = $state(null);
   async function calculateSpectrogram(): Promise<number[][] | null> {
     if (uploadedFile === null) {
       toaster.error({ title: "Can't process file because it is not loaded." });
@@ -26,13 +26,16 @@
     }
 
     // Read and decode audio
+    const decodeTaskID = tasks.addTask('Decode audio');
     const audioContext = new window.AudioContext();
     const arrayBuffer = await uploadedFile.arrayBuffer();
     const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+    tasks.completeTask(decodeTaskID);
 
     // Resample to config's sample_rate if necessary
     let resampledBuffer = audioBuffer;
     if (audioBuffer.sampleRate !== config.spectrogram.sample_rate) {
+      const resampleTaskID = tasks.addTask('Resampling audio');
       const offlineContext = new OfflineAudioContext(
         audioBuffer.numberOfChannels,
         audioBuffer.duration * config.spectrogram.sample_rate,
@@ -43,9 +46,11 @@
       source.connect(offlineContext.destination);
       source.start();
       resampledBuffer = await offlineContext.startRendering();
+      tasks.completeTask(resampleTaskID);
     }
 
     // Convert to mono
+    const monoTaskID = tasks.addTask('Convert to mono');
     const mono = new Float32Array(resampledBuffer.length);
     for (let i = 0; i < resampledBuffer.length; i++) {
       let sum = 0;
@@ -55,14 +60,17 @@
       }
       mono[i] = sum / resampledBuffer.numberOfChannels;
     }
+    tasks.completeTask(monoTaskID);
 
     const worker = new SpectrogramWorker();
     return new Promise((resolve, reject) => {
+      const melSpectTaskID = tasks.addTask('Extracting spectrogram', 0);
+
       worker.onmessage = (e) => {
         if (e.data.type == 'progress') {
-          progress = e.data.progress;
+          tasks.updateTaskProgress(melSpectTaskID, e.data.progress);
         } else if (e.data.type == 'complete') {
-          progress = null;
+          tasks.completeTask(melSpectTaskID);
           const { melSpect } = e.data;
           worker.terminate();
           resolve(melSpect);
@@ -82,9 +90,12 @@
     });
   }
 
-  function processFile() {
+  async function processFile() {
     calculateSpectrogram();
-    waveform.addSpectrogram();
+
+    const visualizeSpectTaskID = tasks.addTask('Creating spectrogram visualization');
+    await waveform.addSpectrogram();
+    tasks.completeTask(visualizeSpectTaskID);
   }
 </script>
 
@@ -115,7 +126,10 @@
 
 <AudioFileUpload
   onFileUploaded={(file) => (uploadedFile = file)}
-  onFileClear={() => (uploadedFile = null)}
+  onFileClear={() => {
+    uploadedFile = null;
+    tasks.clear();
+  }}
   {toaster}
 />
 
@@ -125,15 +139,7 @@
   >
 {/if}
 
-{#if progress !== null}
-  <div class="mt-4">Processing audio...</div>
-  <Progress value={progress}>
-    <Progress.Label>{Math.round(progress)}%</Progress.Label>
-    <Progress.Track>
-      <Progress.Range />
-    </Progress.Track>
-  </Progress>
-{/if}
+<Tasks bind:this={tasks} />
 
 <Toast.Group {toaster}>
   {#snippet children(toast)}
