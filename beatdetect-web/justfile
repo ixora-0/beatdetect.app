@@ -3,6 +3,9 @@ default:
 
 # defining scripts in package.json
 
+install:
+    bun install
+
 dev:
     bun dev
 
