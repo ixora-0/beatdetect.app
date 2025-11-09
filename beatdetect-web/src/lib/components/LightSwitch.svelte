@@ -21,8 +21,10 @@
 
 <svelte:head>
   <script>
-    const mode = localStorage.getItem('mode') || FALLBACK;
-    document.documentElement.setAttribute('data-mode', mode);
+    (() => {
+      const mode = localStorage.getItem('mode') || FALLBACK;
+      document.documentElement.setAttribute('data-mode', mode);
+    })();
   </script>
 </svelte:head>
 
