@@ -8,6 +8,13 @@
   import { Toast, createToaster } from '@skeletonlabs/skeleton-svelte';
   import type { PageProps } from './$types';
   import SpectrogramWorker from '$lib/workers/spectrogram-worker.ts?worker';
+  import SpectralFluxWorker from '$lib/workers/spectral-flux-worker.ts?worker';
+  import type {
+    SpectrogramWorkerInput,
+    SpectrogramWorkerOutput,
+    SpectralFluxWorkerInput,
+    SpectralFluxWorkerOutput
+  } from '$lib/types/worker-types';
 
   let { data }: PageProps = $props();
   const { config } = data;
@@ -19,7 +26,7 @@
   let isWaveformReady = $state(false);
   let tasks: Tasks;
 
-  async function calculateSpectrogram(): Promise<number[][] | null> {
+  async function extractFeatures() {
     if (uploadedFile === null) {
       toaster.error({ title: "Can't process file because it is not loaded." });
       return null;
@@ -62,36 +69,51 @@
     }
     tasks.completeTask(monoTaskID);
 
-    const worker = new SpectrogramWorker();
-    return new Promise((resolve, reject) => {
-      const melSpectTaskID = tasks.addTask('Extracting spectrogram', 0);
-
-      worker.onmessage = (e) => {
-        if (e.data.type == 'progress') {
-          tasks.updateTaskProgress(melSpectTaskID, e.data.progress);
-        } else if (e.data.type == 'complete') {
-          tasks.completeTask(melSpectTaskID);
-          const { melSpect } = e.data;
+    async function runWorker<I, O>(
+      worker: Worker,
+      taskID: string,
+      input: I,
+      errMsg: string
+    ): Promise<O> {
+      return new Promise((resolve, reject) => {
+        worker.onmessage = (e) => {
+          if (e.data.type == 'progress') {
+            tasks.updateTaskProgress(taskID, e.data.progress);
+          } else if (e.data.type == 'complete') {
+            tasks.completeTask(taskID);
+            worker.terminate();
+            resolve(e.data);
+          }
+        };
+        worker.onerror = (e) => {
           worker.terminate();
-          resolve(melSpect);
-        }
-      };
-
-      worker.onerror = (e) => {
-        worker.terminate();
-        toaster.error({ title: 'Error while calculating spectrogram.', description: e.error });
-        reject();
-      };
-
-      worker.postMessage({
-        mono: mono,
-        config: config.spectrogram
+          toaster.error({ title: errMsg, description: e.error });
+          reject();
+        };
+        worker.postMessage(input);
       });
-    });
+    }
+
+    // Extract mel spectrogram
+    const { melSpect } = await runWorker<SpectrogramWorkerInput, SpectrogramWorkerOutput>(
+      new SpectrogramWorker(),
+
+      tasks.addTask('Extracting spectrogram', 0),
+      { mono: mono, config: config.spectrogram },
+      'Error while calculating spectrogram.'
+    );
+
+    const { spectralFlux } = await runWorker<SpectralFluxWorkerInput, SpectralFluxWorkerOutput>(
+      new SpectralFluxWorker(),
+      tasks.addTask('Extracting spectral flux', null),
+      { melSpect: melSpect, config: config.spectral_flux },
+      'Error while calculating spectral flux.'
+    );
+    return { melSpect, spectralFlux };
   }
 
   async function processFile() {
-    calculateSpectrogram();
+    extractFeatures();
 
     const visualizeSpectTaskID = tasks.addTask('Creating spectrogram visualization');
     await waveform.addSpectrogram();
