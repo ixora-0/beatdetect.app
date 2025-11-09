@@ -1,6 +1,6 @@
 <script lang="ts">
   import IconFileAudioRegular from 'phosphor-icons-svelte/IconFileAudioRegular.svelte';
-  import IconTrashBold from 'phosphor-icons-svelte/IconTrashBold.svelte';
+  import IconTrashRegular from 'phosphor-icons-svelte/IconTrashRegular.svelte';
 
   import { FileUpload } from '@skeletonlabs/skeleton-svelte';
   import { createToaster } from '@skeletonlabs/skeleton-svelte';
@@ -40,11 +40,14 @@
         clearFile();
         if (onFileClear) onFileClear();
       }}
-      class="btn-icon preset-outlined transition-all hover:preset-filled-error-500 hover:shadow-lg hover:shadow-error-500/50"
+      class="group btn-icon w-auto justify-start gap-0 preset-outlined shadow-error-500/50 transition-all hover:gap-1 hover:preset-filled-error-500 hover:shadow-lg"
       title="Clear file"
       aria-label="Clear file"
     >
-      <IconTrashBold class="size-6" />
+      <IconTrashRegular class="size-6" />
+      <span class="max-w-0 overflow-hidden whitespace-nowrap transition-all group-hover:max-w-xs">
+        Clear file
+      </span>
     </button>
   </div>
 {:else}
