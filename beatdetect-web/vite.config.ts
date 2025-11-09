@@ -1,6 +1,7 @@
 import tailwindcss from '@tailwindcss/vite';
 import { sveltekit } from '@sveltejs/kit/vite';
 import { defineConfig } from 'vite';
+import path from 'path';
 
 export default defineConfig({
   plugins: [tailwindcss(), sveltekit()],
@@ -9,4 +10,9 @@ export default defineConfig({
       usePolling: true
     }
   },
+  resolve: {
+    alias: {
+      '@configs': path.resolve(__dirname, '../configs')
+    }
+  }
 });
