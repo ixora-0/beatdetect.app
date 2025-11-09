@@ -82,6 +82,11 @@ class SpectrogramConfig(BaseModel):
         return self.sample_rate / self.hop_length
 
 
+class SpectralFluxConfig(BaseModel):
+    lag: int
+    max_size: int
+
+
 class TrainingConfig(BaseModel):
     train_ratio: float
     val_ratio: float
@@ -114,6 +119,7 @@ class Config(BaseModel):
     paths: Paths
     downloads: Downloads
     spectrogram: SpectrogramConfig
+    spectral_flux: SpectralFluxConfig
     training: TrainingConfig
     hypers: HypersConfig
     post: PostConfig

@@ -21,6 +21,7 @@ export const load: LayoutServerLoad = async () => {
     paths: parsed.paths,
     downloads: parsed.downloads,
     spectrogram,
+    spectral_flux: parsed.spectral_flux,
     training,
     hypers: parsed.hypers,
     post: parsed.post

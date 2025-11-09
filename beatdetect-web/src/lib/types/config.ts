@@ -75,6 +75,11 @@ export interface SpectrogramConfig {
   readonly fps: number; // calculated
 }
 
+export interface SpectralFluxConfig {
+  readonly lag: number;
+  readonly max_size: number;
+}
+
 export interface TrainingConfig {
   readonly train_ratio: number;
   readonly val_ratio: number;
@@ -88,6 +93,7 @@ export interface Config {
   readonly paths: Paths;
   readonly downloads: Downloads;
   readonly spectrogram: SpectrogramConfig;
+  readonly spectral_flux: SpectralFluxConfig;
   readonly training: TrainingConfig;
   readonly hypers: HypersConfig;
   readonly post: PostConfig;
@@ -99,6 +105,7 @@ export interface TomlConfig {
   readonly paths: Paths;
   readonly downloads: Downloads;
   readonly spectrogram: Omit<SpectrogramConfig, 'n_stft' | 'fps'>;
+  readonly spectral_flux: SpectralFluxConfig;
   readonly training: Omit<TrainingConfig, 'test_ratio'>;
   readonly hypers: HypersConfig;
   readonly post: PostConfig;

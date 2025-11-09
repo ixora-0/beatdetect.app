@@ -59,6 +59,10 @@ n_mels = 128
 mel_scale = "slaney"
 hop_length = 441
 
+[spectral_flux]
+lag = 2
+max_size = 3
+
 [training]
 train_ratio = 0.8
 val_ratio = 0.1

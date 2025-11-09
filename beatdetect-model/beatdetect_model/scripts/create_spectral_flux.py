@@ -32,14 +32,14 @@ def main(config: Config, specified_dataset=None):
                 continue
 
             melspect = torch.from_numpy(spectrograms[file_name]).to(torch.float32)
-            # ibrosa.onset.onset_strength requires log-power spectrogram
+            # librosa.onset.onset_strength requires log-power spectrogram
             log_melspect = torchaudio.transforms.AmplitudeToDB(stype="power")(melspect)
             spectral_flux = librosa.onset.onset_strength(
                 S=log_melspect.T,
                 sr=config.spectrogram.sample_rate,
                 hop_length=config.spectrogram.hop_length,
-                lag=2,
-                max_size=3,
+                lag=config.spectral_flux.lag,
+                max_size=config.spectral_flux.max_size,
             )
             spectral_flux = np.clip(spectral_flux, None, 4)  # clip values above 4
 
