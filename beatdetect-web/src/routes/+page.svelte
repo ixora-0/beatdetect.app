@@ -7,7 +7,7 @@
   import Tasks from '$lib/components/Tasks.svelte';
   import { Toast, createToaster } from '@skeletonlabs/skeleton-svelte';
   import type { PageProps } from './$types';
-  import SpectrogramWorker from './spectrogram-worker.ts?worker';
+  import SpectrogramWorker from '$lib/workers/spectrogram-worker.ts?worker';
 
   let { data }: PageProps = $props();
   const { config } = data;
