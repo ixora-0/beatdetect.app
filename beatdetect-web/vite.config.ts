@@ -14,5 +14,11 @@ export default defineConfig({
     alias: {
       '@configs': path.resolve(__dirname, '../configs')
     }
+  },
+
+  // Ignore vite worker_thread warning
+  // https://github.com/vitejs/vite/pull/3932
+  optimizeDeps: {
+    exclude: ['worker_threads']
   }
 });
