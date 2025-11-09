@@ -16,8 +16,7 @@ self.onmessage = function (e) {
 
     const melBands = Meyda.extract('melBands', window);
     if (melBands === null) {
-      self.postMessage({ error: 'Meyda library returns null.' });
-      return;
+      throw new Error('Meyda library returns null.');
     }
     melSpect.push(melBands as number[]);
 
