@@ -1,4 +1,6 @@
 <script lang="ts">
+  import IconPlayRegular from 'phosphor-icons-svelte/IconPlayRegular.svelte';
+  import IconPauseRegular from 'phosphor-icons-svelte/IconPauseRegular.svelte';
   import WaveSurfer from 'wavesurfer.js';
   import Spectrogram from 'wavesurfer.js/dist/plugins/spectrogram.js';
   import Timeline from 'wavesurfer.js/dist/plugins/timeline.js';
@@ -18,6 +20,7 @@
   $effect(() => {
     if (onReadyChange) onReadyChange(ready);
   });
+  let playing = $state(false);
 
   $effect(() => {
     if (wavesurfer) {
@@ -39,6 +42,13 @@
           Timeline.create({ height: 25, style: { fontSize: '20px' } }),
           Zoom.create({ scale: 0.1, maxZoom: 200 })
         ]
+      });
+
+      wavesurfer.on('play', () => {
+        playing = true;
+      });
+      wavesurfer.on('pause', () => {
+        playing = false;
       });
 
       wavesurfer.on('interaction', () => {
@@ -95,6 +105,22 @@
         </Progress.Circle>
       </Progress>
       <span>Loading waveform...</span>
+    {:else}
+      <button class="btn-icon size-6" onclick={() => wavesurfer?.playPause()}>
+        {#if playing}
+          <IconPauseRegular class="h-full w-full" />
+        {:else}
+          <IconPlayRegular class="h-full w-full" />
+        {/if}
+      </button>
     {/if}
   </div>
 {/if}
+
+<svelte:window
+  on:keydown|preventDefault={(e) => {
+    if (e.code === 'Space') {
+      wavesurfer?.playPause();
+    }
+  }}
+/>
