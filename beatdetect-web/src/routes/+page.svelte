@@ -5,6 +5,7 @@
   import LightSwitch from '$lib/components/LightSwitch.svelte';
   import Waveform from '$lib/components/Waveform.svelte';
   import Tasks from '$lib/components/Tasks.svelte';
+  import { decodeAudio, resampleBuffer, toMono } from '$lib/utils/audio';
   import { Toast, createToaster } from '@skeletonlabs/skeleton-svelte';
   import type { PageProps } from './$types';
   import SpectrogramWorker from '$lib/workers/spectrogram-worker.ts?worker';
@@ -32,41 +33,16 @@
       return null;
     }
 
-    // Read and decode audio
-    const decodeTaskID = tasks.addTask('Decode audio');
-    const audioContext = new window.AudioContext();
-    const arrayBuffer = await uploadedFile.arrayBuffer();
-    const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+    const decodeTaskID = tasks.addTask('Decoding audio file');
+    const audioBuffer = await decodeAudio(uploadedFile);
     tasks.completeTask(decodeTaskID);
-
-    // Resample to config's sample_rate if necessary
-    let resampledBuffer = audioBuffer;
-    if (audioBuffer.sampleRate !== config.spectrogram.sample_rate) {
-      const resampleTaskID = tasks.addTask('Resampling audio');
-      const offlineContext = new OfflineAudioContext(
-        audioBuffer.numberOfChannels,
-        audioBuffer.duration * config.spectrogram.sample_rate,
-        config.spectrogram.sample_rate
-      );
-      const source = offlineContext.createBufferSource();
-      source.buffer = audioBuffer;
-      source.connect(offlineContext.destination);
-      source.start();
-      resampledBuffer = await offlineContext.startRendering();
-      tasks.completeTask(resampleTaskID);
-    }
-
-    // Convert to mono
-    const monoTaskID = tasks.addTask('Convert to mono');
-    const mono = new Float32Array(resampledBuffer.length);
-    for (let i = 0; i < resampledBuffer.length; i++) {
-      let sum = 0;
-      // Average channels
-      for (let channel = 0; channel < resampledBuffer.numberOfChannels; channel++) {
-        sum += resampledBuffer.getChannelData(channel)[i];
-      }
-      mono[i] = sum / resampledBuffer.numberOfChannels;
-    }
+    const resampleTaskID = tasks.addTask('Resampling audio file');
+    const resampledBuffer = await resampleBuffer(audioBuffer, config.spectrogram.sample_rate);
+    tasks.completeTask(resampleTaskID);
+    const monoTaskID = tasks.addTask('Converting audio file to mono');
+    const mono = await toMono(resampledBuffer, (progress) =>
+      tasks.updateTaskProgress(monoTaskID, progress)
+    );
     tasks.completeTask(monoTaskID);
 
     async function runWorker<I, O>(

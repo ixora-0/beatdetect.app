@@ -52,7 +52,7 @@
   }
 </script>
 
-<div class="grid grid-cols-[200px_1fr] items-center gap-4">
+<div class="grid grid-cols-[minmax(200px,25%)_1fr] items-center gap-4">
   {#each allTasks as task}
     <span>{task.name}</span>
     <Progress value={task.progress}>
