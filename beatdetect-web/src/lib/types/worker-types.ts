@@ -6,11 +6,11 @@ export interface SpectrogramWorkerInput {
 }
 export interface SpectrogramWorkerOutput {
   type: 'complete';
-  melSpect: number[][];
+  melSpect: Float64Array[];
 }
 
 export interface SpectralFluxWorkerInput {
-  melSpect: number[][];
+  melSpect: Float64Array[];
   config: SpectralFluxConfig;
 }
 export interface SpectralFluxWorkerOutput {

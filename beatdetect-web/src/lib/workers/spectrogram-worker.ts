@@ -7,23 +7,28 @@ self.onmessage = function (e) {
   Meyda.sampleRate = config.sample_rate;
   Meyda.melBands = config.n_mels;
 
-  const melSpect: number[][] = [];
+  const T = Math.ceil((mono.length - config.n_fft) / config.hop_length);
+  const melSpect: Float64Array[] = Array.from({ length: config.n_mels }, () => new Float64Array(T));
 
-  const end = mono.length - config.n_fft;
+  for (let i = 0; i < T; i++) {
+    const frame = i * config.hop_length;
 
-  for (let i = 0; i < end; i += config.hop_length) {
-    const window = mono.slice(i, i + config.n_fft);
+    const window = mono.slice(frame, frame + config.n_fft);
 
-    const melBands = Meyda.extract('melBands', window);
-    if (melBands === null) {
+    const feature = Meyda.extract('melBands', window);
+    if (feature === null) {
       throw new Error('Meyda library returns null.');
     }
-    melSpect.push(melBands as number[]);
+    const melBands = feature as number[];
+
+    for (let j = 0; j < config.n_mels; j++) {
+      melSpect[j][i] = melBands[j];
+    }
 
     // Send progress updates
     self.postMessage({
       type: 'progress',
-      progress: (i / end) * 100
+      progress: (i / T) * 100
     });
   }
 

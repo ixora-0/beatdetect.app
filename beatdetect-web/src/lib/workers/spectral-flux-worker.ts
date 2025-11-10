@@ -1,7 +1,7 @@
 import type { SpectralFluxWorkerInput } from '$lib/types/worker-types';
 
 function extractSpectralFlux(
-  melSpect: number[][], // shape [nMels][nFrames], linear power scale
+  melSpect: Float64Array[], // shape [nMels][nFrames], linear power scale
   lag: number,
   maxSize: number
 ): number[] {
