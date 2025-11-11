@@ -6,7 +6,7 @@ app = typer.Typer(help="Beat detection pipeline CLI")
 
 
 @app.command()
-def download(config: str = "configs/dev.toml"):
+def download(config: str = "../configs/dev.toml"):
     """Download raw data (annotations, spectrograms)."""
     from .scripts import download_annotations, download_spectrograms
 
@@ -16,7 +16,7 @@ def download(config: str = "configs/dev.toml"):
 
 
 @app.command()
-def preprocess(config: str = "configs/dev.toml"):
+def preprocess(config: str = "../configs/dev.toml"):
     """Clean and process annotations and features."""
     from .scripts import (
         combine_dataset_info,
@@ -33,7 +33,7 @@ def preprocess(config: str = "configs/dev.toml"):
 
 
 @app.command()
-def split(config: str = "configs/dev.toml"):
+def split(config: str = "../configs/dev.toml"):
     """Split processed data into train/validation/test sets and save the splits."""
     from .scripts import make_splits
 
@@ -42,7 +42,7 @@ def split(config: str = "configs/dev.toml"):
 
 
 @app.command()
-def prepare_data(config: str = "configs/dev.toml"):
+def prepare_data(config: str = "../configs/dev.toml"):
     """Download and preprocess data"""
     download(config)
     preprocess(config)
@@ -51,7 +51,7 @@ def prepare_data(config: str = "configs/dev.toml"):
 
 @app.command()
 def train(
-    config: str = "configs/dev.toml",
+    config: str = "../configs/dev.toml",
     no_log: bool = typer.Option(
         False,
         "--no-log",
@@ -66,7 +66,7 @@ def train(
 
 
 @app.command()
-def create_transition_matrix(config: str = "configs/dev.toml"):
+def create_transition_matrix(config: str = "../configs/dev.toml"):
     """Precompute state transition matrix used in postprocessing."""
     from .model.postprocessing import create_transitions
 
@@ -75,7 +75,7 @@ def create_transition_matrix(config: str = "configs/dev.toml"):
 
 
 @app.command()
-def create_init_dist(config: str = "configs/dev.toml"):
+def create_init_dist(config: str = "../configs/dev.toml"):
     """Initial log probability distributions from data for postprocessing"""
     from .model.postprocessing import create_init_dist
 
@@ -84,7 +84,7 @@ def create_init_dist(config: str = "configs/dev.toml"):
 
 
 @app.command()
-def run_all(config: str = "configs/dev.toml"):
+def run_all(config: str = "../configs/dev.toml"):
     """Run the full pipeline end-to-end."""
     prepare_data(config)
     train(config)
