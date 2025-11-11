@@ -1,5 +1,25 @@
 import Meyda from 'meyda';
 
+function reflectPad(array: Float32Array, padLeft: number, padRight: number): Float32Array {
+  const totalLength = array.length + padLeft + padRight;
+  const padded = new Float32Array(totalLength);
+  padded.set(array, padLeft);
+
+  // Left
+  for (let i = 0; i < padLeft; i++) {
+    const reflectIdx = padLeft - i;
+    padded[i] = array[Math.min(reflectIdx, array.length - 1)];
+  }
+
+  // Right
+  for (let i = 0; i < padRight; i++) {
+    const reflectIdx = array.length - 2 - i;
+    padded[padLeft + array.length + i] = array[Math.max(0, reflectIdx)];
+  }
+
+  return padded;
+}
+
 self.onmessage = function (e) {
   const { mono, config } = e.data;
 
@@ -7,13 +27,16 @@ self.onmessage = function (e) {
   Meyda.sampleRate = config.sample_rate;
   Meyda.melBands = config.n_mels;
 
-  const T = Math.ceil((mono.length - config.n_fft) / config.hop_length);
+  const padLength = Math.floor(config.n_fft / 2);
+  const y = reflectPad(mono, padLength, padLength);
+
+  const T = Math.ceil((y.length - config.n_fft) / config.hop_length);
   const melSpect: Float64Array[] = Array.from({ length: config.n_mels }, () => new Float64Array(T));
 
   for (let i = 0; i < T; i++) {
     const frame = i * config.hop_length;
 
-    const window = mono.slice(frame, frame + config.n_fft);
+    const window = y.slice(frame, frame + config.n_fft);
 
     const feature = Meyda.extract('melBands', window);
     if (feature === null) {
