@@ -30,7 +30,10 @@
         inherit system;
         config.allowUnfree = true;  # for cuda packages
       };
-      pkgs-unstable = import inputs.nixpkgs-unstable { inherit system; };
+      pkgs-unstable = import inputs.nixpkgs-unstable {
+        inherit system;
+        config.allowUnfree = true;  # for cuda packages
+      };
       python = pkgs.python311;
       projectName = "beatdetect-model";  # matches [project.name] in pyproject.toml
       toFolderName = s: builtins.replaceStrings ["-"] ["_"] s;
@@ -50,9 +53,19 @@
       overrides = pkgs.lib.composeExtensions (inputs.uv2nix_hammer_overrides.overrides_strict pkgs) (
         final: prev: {
           # additional overlays
-          # torch 2.5.1 in uv2nix_hammer_overrides -> torch 2.6.0
+          # torch 2.5.1 in uv2nix_hammer_overrides -> torch 2.8.0
           torch = prev.torch.overrideAttrs (old: {
-            buildInputs = (old.buildInputs or []) ++ [pkgs.cudaPackages.cusparselt];
+            buildInputs = (builtins.filter (pkg: pkg.pname != "nccl") old.buildInputs) ++ [
+              # new
+              pkgs.cudaPackages.cusparselt
+              pkgs.cudaPackages.libcufile
+              # upgrade
+              # need >=2.27 for ncclCommWindowRegister
+              pkgs-unstable.cudaPackages.nccl
+            ];
+          });
+          nvidia-cufile-cu12 = prev.nvidia-cufile-cu12.overrideAttrs (old: {
+            buildInputs = (old.buildInputs or []) ++ [pkgs.rdma-core];
           });
         }
       );

@@ -8,6 +8,8 @@ dependencies = [
   "librosa>=0.11.0",
   "mir-eval>=0.8.2",
   "numpy>=2.2.6",
+  "onnx>=1.19.1",
+  "onnxscript>=0.5.6",
   "pandas>=2.3.2",
   "plotly>=6.3.0",
   "polars>=1.33.1",
@@ -16,8 +18,8 @@ dependencies = [
   "pytorch-tcn>=1.2.3",
   "scipy>=1.16.2",
   "tensorboard>=2.20.0",
-  "torch==2.6.0",
-  "torchaudio==2.6.0",
+  "torch==2.8.0",
+  "torchaudio==2.8.0",
   "torchinfo>=1.8.0",
   "torchview>=0.2.7",
   "tqdm>=4.67.1",
@@ -29,12 +31,12 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.uv.sources]
-torch = [{ index = "pytorch-cu126" }]
-torchaudio = [{ index = "pytorch-cu126" }]
+torch = [{ index = "pytorch-cu128" }]
+torchaudio = [{ index = "pytorch-cu128" }]
 
 [[tool.uv.index]]
-name = "pytorch-cu126"
-url = "https://download.pytorch.org/whl/cu126"
+name = "pytorch-cu128"
+url = "https://download.pytorch.org/whl/cu128"
 explicit = true
 
 [project.scripts]
