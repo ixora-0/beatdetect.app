@@ -32,10 +32,10 @@ url_template = "https://zenodo.org/records/13922116/files/${dataset}.zip?downloa
 
 
 [paths]
-models = "models"
+models = "../models"
 downloads = "data/downloads"
-transitions = "models/transitions.npz"
-init_dist = "models/init_dist.npz"
+transitions = "../models/transitions.npz"
+init_dist = "../models/init_dist.npz"
 
 [paths.data.raw]
 annotations = "data/raw/annotations"
