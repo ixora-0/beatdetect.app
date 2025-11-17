@@ -8,14 +8,8 @@
   import { decodeAudio, resampleBuffer, toMono } from '$lib/utils/audio';
   import { Toast, createToaster } from '@skeletonlabs/skeleton-svelte';
   import type { PageProps } from './$types';
-  import SpectrogramWorker from '$lib/workers/spectrogram-worker.ts?worker';
-  import SpectralFluxWorker from '$lib/workers/spectral-flux-worker.ts?worker';
-  import type {
-    SpectrogramWorkerInput,
-    SpectrogramWorkerOutput,
-    SpectralFluxWorkerInput,
-    SpectralFluxWorkerOutput
-  } from '$lib/types/worker-types';
+  import PreprocessWorker from '$lib/workers/preprocess-worker.ts?worker';
+  import type { PreprocessWorkerInput, PreprocessWorkerOutput } from '$lib/types/worker-types';
 
   let { data }: PageProps = $props();
   const { config } = data;
@@ -71,21 +65,14 @@
     }
 
     // Extract mel spectrogram
-    const { melSpect } = await runWorker<SpectrogramWorkerInput, SpectrogramWorkerOutput>(
-      new SpectrogramWorker(),
-
-      tasks.addTask('Extracting spectrogram', 0),
-      { mono: mono, config: config.spectrogram },
+    const { mel, flux } = await runWorker<PreprocessWorkerInput, PreprocessWorkerOutput>(
+      new PreprocessWorker(),
+      tasks.addTask('Extracting features'),
+      { mono },
       'Error while calculating spectrogram.'
     );
 
-    const { spectralFlux } = await runWorker<SpectralFluxWorkerInput, SpectralFluxWorkerOutput>(
-      new SpectralFluxWorker(),
-      tasks.addTask('Extracting spectral flux', null),
-      { melSpect: melSpect, config: config.spectral_flux },
-      'Error while calculating spectral flux.'
-    );
-    return { melSpect, spectralFlux };
+    return { mel, flux };
   }
 
   async function processFile() {

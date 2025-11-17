@@ -1,19 +1,8 @@
-import type { SpectralFluxConfig, SpectrogramConfig } from './config';
-
-export interface SpectrogramWorkerInput {
+export interface PreprocessWorkerInput {
   mono: Float32Array<ArrayBuffer>;
-  config: SpectrogramConfig;
 }
-export interface SpectrogramWorkerOutput {
+export interface PreprocessWorkerOutput {
   type: 'complete';
-  melSpect: Float64Array[];
-}
-
-export interface SpectralFluxWorkerInput {
-  melSpect: Float64Array[];
-  config: SpectralFluxConfig;
-}
-export interface SpectralFluxWorkerOutput {
-  type: 'complete';
-  spectralFlux: number[];
+  mel: Float32Array<ArrayBufferLike>;
+  flux: Float32Array<ArrayBufferLike>;
 }

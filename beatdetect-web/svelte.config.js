@@ -9,7 +9,8 @@ const config = {
   kit: {
     adapter: adapter(),
     alias: {
-      '@configs': path.resolve(__dirname, '../configs')
+      '@configs': path.resolve(__dirname, '../configs'),
+      '@onnx_models': path.resolve(__dirname, '../models/onnx')
     }
   },
   extensions: ['.svelte', '.svx']

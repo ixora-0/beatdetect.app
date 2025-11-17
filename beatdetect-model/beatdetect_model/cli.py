@@ -90,5 +90,13 @@ def run_all(config: str = "../configs/dev.toml"):
     train(config)
 
 
+@app.command()
+def save_onnx(config: str = "../configs/dev.toml"):
+    from .scripts import save_onnx
+
+    cfg = config_loader.load_config(config)
+    save_onnx.main(cfg)
+
+
 if __name__ == "__main__":
     app()
