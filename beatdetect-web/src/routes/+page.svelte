@@ -9,7 +9,13 @@
   import { Toast, createToaster } from '@skeletonlabs/skeleton-svelte';
   import type { PageProps } from './$types';
   import PreprocessWorker from '$lib/workers/preprocess-worker.ts?worker';
-  import type { PreprocessWorkerInput, PreprocessWorkerOutput } from '$lib/types/worker-types';
+  import TCNWorker from '$lib/workers/tcn-worker.ts?worker';
+  import {
+    type TCNInput,
+    type TCNOutput,
+    type PreprocessWorkerInput,
+    type PreprocessWorkerOutput
+  } from '$lib/types/worker-types';
 
   let { data }: PageProps = $props();
   const { config } = data;
@@ -72,7 +78,15 @@
       'Error while calculating spectrogram.'
     );
 
-    return { mel, flux };
+    // Run TCN
+    const { probs } = await runWorker<TCNInput, TCNOutput>(
+      new TCNWorker(),
+      tasks.addTask('Running neural network model'),
+      { mel, flux, n_mels: config.spectrogram.n_mels },
+      'Error when running neural network model.'
+    );
+
+    return { probs };
   }
 
   async function processFile() {
