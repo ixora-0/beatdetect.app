@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import typer
 
 from . import config_loader
@@ -90,12 +92,22 @@ def run_all(config: str = "../configs/dev.toml"):
     train(config)
 
 
+_BEAT_MODEL_PATH = typer.Argument(
+    None,
+    help="Path to beat detect tcn model, if omitted defaults to latest in models/",
+)
+
+
 @app.command()
-def save_onnx(config: str = "../configs/dev.toml"):
+def save_onnx(
+    config: str = "../configs/dev.toml", beat_model_path: str = _BEAT_MODEL_PATH
+):
     from .scripts import save_onnx
 
     cfg = config_loader.load_config(config)
-    save_onnx.main(cfg)
+    if beat_model_path is not None:
+        beat_model_path = Path(beat_model_path)
+    save_onnx.main(cfg, beat_model_path)
 
 
 if __name__ == "__main__":

@@ -1,7 +1,12 @@
+import os
+from pathlib import Path
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torchaudio
+
+from beatdetect_model.model.tcn import BeatDetectTCN
 
 from ..config_loader import Config, load_config
 
@@ -85,7 +90,8 @@ class MelSpectAndSpectralFlux(nn.Module):
         return mel, onset
 
 
-def main(config: Config):
+def main(config: Config, beat_model_path: Path | None = None):
+    # --- preprocess ---
     model = MelSpectAndSpectralFlux(
         sample_rate=config.spectrogram.sample_rate,
         n_fft=config.spectrogram.n_fft,
@@ -114,6 +120,34 @@ def main(config: Config):
 
     p = config.paths.models / "onnx" / "preprocess.onnx"
     print(f"Saving mel spectrogram + spectrogram extractor at {p}")
+    p.parent.mkdir(parents=True, exist_ok=True)
+    onnx_program.save(p)
+    print("Done.")
+
+    # --- beat detect tcn ---
+    if not beat_model_path:
+        print("No beat detect model path provided, finding latest file")
+        models = list(config.paths.models.glob("*.pt"))
+        beat_model_path = max(models, key=os.path.getmtime)
+
+    beat_model = BeatDetectTCN(config)
+    beat_model.load_state_dict(torch.load(beat_model_path))
+    dummy_mel = torch.randn(1, config.spectrogram.n_mels, 1600)
+    dummy_flux = torch.randn(1, 1600)
+    onnx_program = torch.onnx.export(
+        beat_model,
+        (dummy_mel, dummy_flux),
+        input_names=["mel", "flux"],
+        output_names=["probs"],
+        dynamic_shapes={
+            "mel": {0: "batch", 2: "time"},  # (B, N_MELS, T)
+            "flux": {0: "batch", 1: "time"},  # (B, T)
+        },
+        dynamo=True,
+    )
+
+    p = config.paths.models / "onnx" / "beattcn.onnx"
+    print(f"Saving {beat_model_path} at {p} as ONNX.")
     p.parent.mkdir(parents=True, exist_ok=True)
     onnx_program.save(p)
     print("Done.")
