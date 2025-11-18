@@ -2,7 +2,7 @@ import typer
 
 from . import config_loader
 
-app = typer.Typer(help="Beat detection pipeline CLI")
+app = typer.Typer(help="Beat detection pipeline CLI", pretty_exceptions_enable=False)
 
 
 @app.command()
