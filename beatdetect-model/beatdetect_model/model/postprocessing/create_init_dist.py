@@ -1,7 +1,8 @@
 import numpy as np
 import polars as pl
-from beatdetect.config_loader import Config, load_config
-from beatdetect.utils.paths import iterate_beat_files
+
+from ...config_loader import Config, load_config
+from ...utils.paths import iterate_beat_files
 
 
 def main(config: Config):
@@ -37,7 +38,9 @@ def main(config: Config):
     init_period_dist = np.log(init_period_dist + 1e-9)
 
     print(f"Saving into {config.paths.init_dist}")
-    np.savez(config.paths.init_dist, period=init_period_dist)
+    config.paths.init_dist.parent.mkdir(parents=True, exist_ok=True)
+    np.savez_compressed(config.paths.init_dist, period=init_period_dist)
+    print("Done.")
 
 
 if __name__ == "__main__":

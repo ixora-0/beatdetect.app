@@ -70,11 +70,11 @@ def main(config: Config):
     # period transition matrix
     num_periods = len(periods)
     period_transition_matrix = np.zeros((num_periods, num_periods))
-    for i in range(num_periods):
+    for state_idx in range(num_periods):
         for j in range(num_periods):
-            period_transition_matrix[i, j] = period_transition(
+            period_transition_matrix[state_idx, j] = period_transition(
                 periods,
-                i,
+                state_idx,
                 j,
                 config.post.pi,
                 config.post.lambda1,
@@ -83,7 +83,7 @@ def main(config: Config):
 
     # state transition matrix
     num_states = len(states)
-    transition_lp = np.full((num_states, num_states), -np.inf)
+    transition_lp = [[] for _ in range(num_states)]
     possible_next_states = [[] for _ in range(num_states)]
     for state_idx, state in tqdm(
         enumerate(states),
@@ -136,18 +136,34 @@ def main(config: Config):
 
                 next_state = (next_period_idx, next_ts_idx, next_phase)
                 next_state_idx = states_to_idx[next_state]
-                transition_lp[next_state_idx, state_idx] = lp
+                transition_lp[state_idx].append(lp)
                 possible_next_states[state_idx].append(next_state_idx)
 
+    # Build CSR
+    row_ptrs = np.empty(num_states + 1, dtype=np.int64)
+    next_states_csr = []
+    lp_csr = []
+    ptr = 0
+    row_ptrs[0] = 0
+    for state_idx in range(num_states):
+        # flatten
+        next_states_csr.extend(possible_next_states[state_idx])
+        lp_csr.extend(transition_lp[state_idx])
+        row_length = len(transition_lp[state_idx])
+        ptr += row_length
+        row_ptrs[state_idx + 1] = ptr
+
     print(f"Saving to {config.paths.transitions}")
-    possible_next_states = np.array((possible_next_states), dtype=np.object_)
-    np.savez(
+    config.paths.transitions.parent.mkdir(parents=True, exist_ok=True)
+    np.savez_compressed(
         config.paths.transitions,
-        lp=transition_lp,
-        states=states,
+        row_ptrs=np.array(row_ptrs, dtype=np.uint32),
+        lp=np.array(lp_csr, dtype=np.float32),
+        states=np.array(states, dtype=np.uint8),
         states_to_idx=states_to_idx,
-        possible_next_states=possible_next_states,
+        possible_next_states=np.array(next_states_csr, dtype=np.uint16),
     )
+
     print("Done.")
 
 

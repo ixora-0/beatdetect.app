@@ -70,11 +70,12 @@ def beam_search(config, nn_output, beam_width=None):
         is_beat = phase % pos_per_beat(period, fps) == 0
         return emission_lp(is_downbeat, is_beat, observation)
 
-    transition_file = np.load(config.paths.transitions, allow_pickle=True)
-    transition_lp = transition_file["lp"]
-    states = transition_file["states"]
-    states_to_idx = transition_file["states_to_idx"]
-    possible_next_states = transition_file["possible_next_states"]
+    transitions_file = np.load(config.paths.transitions)
+    row_ptrs = transitions_file["row_ptrs"]
+    transition_lp = transitions_file["lp"]
+    states = transitions_file["states"]
+    states_to_idx = transitions_file["states_to_idx"]
+    possible_next_states = transitions_file["possible_next_states"]
     init_dist_file = np.load(config.paths.init_dist)
     init_period_dist = init_dist_file["period"]
 
@@ -108,13 +109,14 @@ def beam_search(config, nn_output, beam_width=None):
 
         # Expand transitions
         state_idx = states_to_idx[*node.state]
-        for next_state_idx in possible_next_states[state_idx]:
-            trans_lp = transition_lp[next_state_idx, state_idx]
+        start, end = row_ptrs[state_idx], row_ptrs[state_idx + 1]
+        for p in range(start, end):
+            next_state_idx = possible_next_states[p]
 
             next_state = states[next_state_idx]
             emit_lp = calc_emit_lp(next_state, next_observation)
 
-            next_lp = node.lp + trans_lp + emit_lp
+            next_lp = node.lp + transition_lp[p] + emit_lp
             beam.append(Node(next_lp, next_state, node, next_frame))
 
         beam.sort(key=lambda n: n.lp)
