@@ -46,7 +46,9 @@
   "dependencies": {
     "@iarna/toml": "^2.2.5",
     "fft.js": "^4.0.4",
+    "jszip": "^3.10.1",
     "meyda": "^5.6.3",
+    "npyjs": "^1.0.4",
     "onnxruntime-web": "^1.23.2",
     "wavesurfer.js": "^7.11.1"
   }

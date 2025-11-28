@@ -1,3 +1,5 @@
+import type { Config } from './config';
+
 export interface PreprocessWorkerInput {
   mono: Float32Array<ArrayBuffer>;
 }
@@ -12,7 +14,17 @@ export interface TCNInput {
   flux: Float32Array<ArrayBufferLike>;
   n_mels: number;
 }
+
+export type NNOutput = Float32Array<ArrayBufferLike>;
 export interface TCNOutput {
   type: 'complete';
-  probs: Float32Array<ArrayBufferLike>;
+  probs: NNOutput;
+}
+export interface PostprocessWorkerInput {
+  nnOutput: NNOutput;
+  config: Config;
+}
+export interface PostprocessWorkerOutput {
+  type: 'complete';
+  beats: number[][];
 }

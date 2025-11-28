@@ -10,11 +10,14 @@
   import type { PageProps } from './$types';
   import PreprocessWorker from '$lib/workers/preprocess-worker.ts?worker';
   import TCNWorker from '$lib/workers/tcn-worker.ts?worker';
+  import PostprocessWorker from '$lib/workers/postprocess-worker.ts?worker';
   import {
     type TCNInput,
     type TCNOutput,
     type PreprocessWorkerInput,
-    type PreprocessWorkerOutput
+    type PreprocessWorkerOutput,
+    type PostprocessWorkerInput,
+    type PostprocessWorkerOutput
   } from '$lib/types/worker-types';
 
   let { data }: PageProps = $props();
@@ -85,6 +88,15 @@
       { mel, flux, n_mels: config.spectrogram.n_mels },
       'Error when running neural network model.'
     );
+
+    const { beats } = await runWorker<PostprocessWorkerInput, PostprocessWorkerOutput>(
+      new PostprocessWorker(),
+      tasks.addTask('Post processing'),
+      { nnOutput: probs, config: config },
+      'Error while running post processing'
+    );
+    console.log(beats);
+    // TODO: show beats to user
 
     return { probs };
   }
