@@ -1,5 +1,5 @@
 import * as ort from 'onnxruntime-web';
-import modelURL from '@onnx_models/beattcn.onnx?url'; // if fail run save_onnx first
+import modelURL from '@models/onnx/beattcn.onnx?url'; // if fail run save_onnx first
 import type { TCNInput } from '$lib/types/worker-types';
 
 self.onmessage = async function (e) {

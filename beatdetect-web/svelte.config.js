@@ -10,7 +10,7 @@ const config = {
     adapter: adapter(),
     alias: {
       '@configs': path.resolve(__dirname, '../configs'),
-      '@onnx_models': path.resolve(__dirname, '../models/onnx')
+      '@models': path.resolve(__dirname, '../models')
     }
   },
   extensions: ['.svelte', '.svx']

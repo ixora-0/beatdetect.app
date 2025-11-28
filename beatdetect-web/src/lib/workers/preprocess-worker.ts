@@ -1,5 +1,5 @@
 import * as ort from 'onnxruntime-web';
-import modelURL from '@onnx_models/preprocess.onnx?url'; // if fail run save_onnx first
+import modelURL from '@models/onnx/preprocess.onnx?url'; // if fail run save_onnx first
 
 self.onmessage = async function (e) {
   const { mono } = e.data;
