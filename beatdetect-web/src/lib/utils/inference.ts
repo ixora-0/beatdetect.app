@@ -172,6 +172,7 @@ export function beamSearch(
   config: Config,
   nnOutput: Float32Array<ArrayBufferLike>,
   arrays: Arrays,
+  progressCallback?: (progress: number) => void,
   beamWidth?: number
 ): { beats: number[][]; bestLP: number } {
   const T = nnOutput.length / 3;
@@ -226,7 +227,7 @@ export function beamSearch(
 
   let bestNode: Node | null = null;
   let bestLP = -Infinity;
-
+  let depth = 0;
   while (beam.length > 0) {
     const node = beam.pop()!;
 
@@ -241,6 +242,9 @@ export function beamSearch(
       }
       continue;
     }
+
+    depth = Math.max(nextFrame, depth);
+    if (progressCallback) progressCallback((depth / T) * 100);
 
     const nextObservation = getObservation(nnOutput, Math.round(nextFrame));
 
