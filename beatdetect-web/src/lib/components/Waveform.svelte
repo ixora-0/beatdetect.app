@@ -5,6 +5,7 @@
   import Spectrogram from 'wavesurfer.js/dist/plugins/spectrogram.js';
   import Timeline from 'wavesurfer.js/dist/plugins/timeline.js';
   import Zoom from 'wavesurfer.js/dist/plugins/zoom.js';
+  import Region from 'wavesurfer.js/dist/plugins/regions.js';
   import type { Config } from '$lib/types/config';
   import { Progress } from '@skeletonlabs/skeleton-svelte';
 
@@ -21,6 +22,7 @@
     if (onReadyChange) onReadyChange(ready);
   });
   let playing = $state(false);
+  let regions: Region;
 
   $effect(() => {
     if (wavesurfer) {
@@ -88,6 +90,21 @@
     );
     return new Promise((resolve) => spectrogramPlugin?.once('ready', () => resolve()));
   }
+
+  export function addBeatlines(beats: number[][]) {
+    if (regions === undefined) {
+      regions = Region.create();
+      wavesurfer?.registerPlugin(regions);
+    }
+    for (const [time, beat] of beats) {
+      regions.addRegion({
+        start: time,
+        drag: false,
+        resize: false,
+        id: beat == 1 ? 'downbeat' : 'beat'
+      });
+    }
+  }
 </script>
 
 {#if uploadedFile !== null}
@@ -124,3 +141,12 @@
     }
   }}
 />
+
+<style>
+  #waveform :global(::part(downbeat)) {
+    border-color: var(--color-secondary-500);
+  }
+  #waveform :global(::part(beat)) {
+    border-color: var(--color-primary-500);
+  }
+</style>

@@ -95,8 +95,7 @@
       { nnOutput: probs, config: config },
       'Error while running post processing'
     );
-    console.log(beats);
-    // TODO: show beats to user
+    waveform.addBeatlines(beats);
 
     return { probs };
   }
