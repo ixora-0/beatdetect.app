@@ -28,6 +28,7 @@
 
   let waveform: Waveform;
   let isWaveformReady = $state(false);
+  let isProcessing = $state(false);
   let tasks: Tasks;
 
   async function extractFeatures() {
@@ -101,11 +102,16 @@
   }
 
   async function processFile() {
-    extractFeatures();
+    isProcessing = true;
 
     const visualizeSpectTaskID = tasks.addTask('Creating spectrogram visualization');
-    await waveform.addSpectrogram();
-    tasks.completeTask(visualizeSpectTaskID);
+
+    await Promise.all([
+      extractFeatures(),
+      waveform.addSpectrogram().then(() => tasks.completeTask(visualizeSpectTaskID))
+    ]);
+
+    isProcessing = false;
   }
 </script>
 
@@ -141,6 +147,7 @@
     tasks.clear();
   }}
   {toaster}
+  disableClearFile={isProcessing}
 />
 
 {#if isWaveformReady}
