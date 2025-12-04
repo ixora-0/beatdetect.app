@@ -27,8 +27,8 @@ jobs:
         run: |
           gsutil -m rsync -r ./beatdetect-web/build gs://beatdetect-app-site
       - name: Invalidate Cloudflare cache
-        uses: cloudflare/purge-cache@v1
-        with:
-          api-token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          zone: ${{ secrets.CLOUDFLARE_ZONE_ID }}
-          purge_everything: true
+        run: |
+          curl -X POST "https://api.cloudflare.com/client/v4/zones/${{ secrets.CLOUDFLARE_ZONE_ID }}/purge_cache" \
+            -H "Authorization: Bearer ${{ secrets.CLOUDFLARE_API_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            --data '{"purge_everything":true}'
