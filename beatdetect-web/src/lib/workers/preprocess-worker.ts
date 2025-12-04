@@ -1,10 +1,13 @@
 import * as ort from 'onnxruntime-web';
-import modelURL from '@models/onnx/preprocess.onnx?url'; // if fail run save_onnx first
+import { fetchBinaryCached, getModelURL } from '$lib/utils/model-registry';
 
 self.onmessage = async function (e) {
   const { mono } = e.data;
 
-  const session = await ort.InferenceSession.create(modelURL);
+  const url = await getModelURL('preprocess');
+  const bytes = await fetchBinaryCached(url);
+  const session = await ort.InferenceSession.create(bytes);
+
   const tensor = new ort.Tensor('float32', mono);
   const outputs = await session.run({ waveform: tensor });
 

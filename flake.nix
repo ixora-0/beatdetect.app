@@ -134,6 +134,8 @@
         ]) ++ (with pkgs-unstable; [
           just
           bun
+          opentofu
+          google-cloud-sdk
         ]);
 
         env = {

@@ -110,5 +110,18 @@ def save_onnx(
     save_onnx.main(cfg, beat_model_path)
 
 
+_ARTIFACTS_DIR = typer.Argument(
+    help="Path to directory containing model artifacts."
+    "Directory name is used as the version identifier.",
+)
+
+
+@app.command()
+def upload_artifacts(artifacts_dir: str = _ARTIFACTS_DIR):
+    from .scripts import upload_artifacts
+
+    upload_artifacts.main(Path(artifacts_dir))
+
+
 if __name__ == "__main__":
     app()

@@ -2,9 +2,7 @@ import type { Config } from '$lib/types/config';
 import JSZip from 'jszip';
 import { load, type NpyArray } from 'npyjs';
 
-// paths should be same as in config
-import transitionFileURL from '@models/transitions.npz?url';
-import initDistFileURL from '@models/init_dist.npz?url';
+import { fetchBinaryCached, getModelURL } from '$lib/utils/model-registry';
 
 // Type definitions
 type State = [number, number, number]; // period idx, ts idx, phase
@@ -38,10 +36,13 @@ async function loadNPZ(buffer: ArrayBuffer | Uint8Array) {
 export async function loadArrays(): Promise<Arrays> {
   const result: Partial<Arrays> = {};
 
-  for (const url of [transitionFileURL, initDistFileURL]) {
-    const response = await fetch(url);
-    if (!response.ok) throw new Error(`Failed to fetch ${url}: ${response.status}`);
-    const buffer = await response.arrayBuffer();
+  const transUrl = await getModelURL('transitions');
+  const initUrl = await getModelURL('init_dist');
+
+  const transBuf = await fetchBinaryCached(transUrl);
+  const initBuf = await fetchBinaryCached(initUrl);
+
+  for (const buffer of [transBuf, initBuf]) {
     const data = await loadNPZ(buffer);
 
     for (const [key, arr] of Object.entries(data)) {
