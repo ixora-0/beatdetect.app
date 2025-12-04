@@ -1,0 +1,34 @@
+name: Deploy Static Site
+on:
+  workflow_dispatch: {}
+  release:
+    types: [published]
+jobs:
+  build-and-upload:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - name: Install deps
+        working-directory: ./beatdetect-web
+        run: bun install
+      - name: Build
+        working-directory: ./beatdetect-web
+        run: bun run build
+      - name: Auth with GCP
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+      - name: Upload to GCS
+        run: |
+          gsutil -m rsync -r ./beatdetect-web/build gs://beatdetect-app-site
+      - name: Invalidate Cloudflare cache
+        uses: cloudflare/purge-cache@v1
+        with:
+          api-token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          zone: ${{ secrets.CLOUDFLARE_ZONE_ID }}
+          purge_everything: true
