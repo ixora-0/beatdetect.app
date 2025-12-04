@@ -1,5 +1,5 @@
 resource "google_storage_bucket" "artifacts" {
-  name     = var.bucket_name
+  name     = "${var.bucket_name}-artifacts"
   location = var.region
 
   force_destroy = true
@@ -24,7 +24,5 @@ resource "google_storage_bucket_iam_binding" "public_read" {
   bucket = google_storage_bucket.artifacts.name
   role   = "roles/storage.objectViewer"
 
-  members = [
-    "allUsers"
-  ]
+  members = ["allUsers"]
 }
