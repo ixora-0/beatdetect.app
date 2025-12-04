@@ -2,7 +2,7 @@
   import IconArrowRightRegular from 'phosphor-icons-svelte/IconArrowRightRegular.svelte';
   import IconWarningRegular from 'phosphor-icons-svelte/IconWarningRegular.svelte';
   import AudioFileUpload from '$lib/components/AudioFileUpload.svelte';
-  import LightSwitch from '$lib/components/LightSwitch.svelte';
+  import AppShell from '$lib/components/AppShell.svelte';
   import Waveform from '$lib/components/Waveform.svelte';
   import Tasks from '$lib/components/Tasks.svelte';
   import { decodeAudio, resampleBuffer, toMono } from '$lib/utils/audio';
@@ -115,48 +115,51 @@
   }
 </script>
 
-<h1>Beat detect app</h1>
-<LightSwitch />
-<form>
-  <!--Not allowing params to change for now-->
-  <label class="label">
-    <span class="label-text">Sample rate</span>
-    <input class="input" type="number" disabled value={config.spectrogram.sample_rate} />
-  </label>
-  <label class="label">
-    <span class="label-text">Hop size</span>
-    <input class="input" type="number" disabled value={config.spectrogram.hop_length} />
-  </label>
-  <label class="label">
-    <span class="label-text"># mel bands</span>
-    <input class="input" type="number" disabled value={config.spectrogram.n_mels} />
-  </label>
-</form>
+<AppShell>
+  <div slot="sidebar">
+    <form>
+      <!--Not allowing params to change for now-->
+      <label class="label">
+        <span class="label-text">Sample rate</span>
+        <input class="input" type="number" disabled value={config.spectrogram.sample_rate} />
+      </label>
+      <label class="label">
+        <span class="label-text">Hop size</span>
+        <input class="input" type="number" disabled value={config.spectrogram.hop_length} />
+      </label>
+      <label class="label">
+        <span class="label-text"># mel bands</span>
+        <input class="input" type="number" disabled value={config.spectrogram.n_mels} />
+      </label>
+    </form>
+  </div>
 
-<Waveform
-  {config}
-  {uploadedFile}
-  onReadyChange={(ready) => (isWaveformReady = ready)}
-  bind:this={waveform}
-/>
+  <section slot="main">
+    <Waveform
+      {config}
+      {uploadedFile}
+      onReadyChange={(ready) => (isWaveformReady = ready)}
+      bind:this={waveform}
+    />
 
-<AudioFileUpload
-  onFileUploaded={(file) => (uploadedFile = file)}
-  onFileClear={() => {
-    uploadedFile = null;
-    tasks.clear();
-  }}
-  {toaster}
-  disableClearFile={isProcessing}
-/>
+    <AudioFileUpload
+      onFileUploaded={(file) => (uploadedFile = file)}
+      onFileClear={() => {
+        uploadedFile = null;
+        tasks.clear();
+      }}
+      {toaster}
+      disableClearFile={isProcessing}
+    />
 
-{#if isWaveformReady}
-  <button class="btn preset-filled" onclick={processFile}
-    ><span>Start</span><IconArrowRightRegular class="size-6" /></button
-  >
-{/if}
-
-<Tasks bind:this={tasks} />
+    {#if isWaveformReady}
+      <button class="btn preset-filled" onclick={processFile}
+        ><span>Start</span><IconArrowRightRegular class="size-6" /></button
+      >
+    {/if}
+    <Tasks bind:this={tasks} />
+  </section>
+</AppShell>
 
 <Toast.Group {toaster}>
   {#snippet children(toast)}
