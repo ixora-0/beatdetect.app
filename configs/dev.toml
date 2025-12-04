@@ -4,7 +4,7 @@ random_seed = 0
 [downloads]
 rc_api_url = "http://localhost:5572"
 datasets = [
-  # "asap",
+  "asap",
   "ballroom",
   "beatles",
   "candombe",
@@ -17,8 +17,8 @@ datasets = [
   "hjdb",
   "jaah",
   "rwc",
-  # "simac",
-  # "smc",
+  "simac",
+  "smc",
   "tapcorrect",
 ]
 
