@@ -1,7 +1,11 @@
 import { mdsvex } from 'mdsvex';
 import adapter from '@sveltejs/adapter-static';
 import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
-import path from 'path';
+import path, { dirname } from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 /** @type {import('@sveltejs/kit').Config} */
 const config = {
@@ -9,8 +13,7 @@ const config = {
   kit: {
     adapter: adapter(),
     alias: {
-      '@configs': path.resolve(__dirname, '../configs'),
-      '@models': path.resolve(__dirname, '../models')
+      '@configs': path.resolve(__dirname, '../configs')
     }
   },
   extensions: ['.svelte', '.svx']
